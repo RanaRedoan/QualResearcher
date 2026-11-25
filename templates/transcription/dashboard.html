@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Transcripts — {{ SITE_NAME }}{% endblock %}
+{% block content %}
+{% if DESKTOP %}
+<div class="home-pane">
+  {% if jobs %}
+    <div class="eyebrow">{% if user.full_name %}Hello, {{ user.full_name }}{% else %}Hello{% endif %}</div>
+    <h1>Transcripts</h1>
+    <div class="stats">
+      <div class="stat"><div class="k">Minutes transcribed</div><div class="v">{{ total_minutes }}</div></div>
+      <div class="stat"><div class="k">In progress</div><div class="v">{{ active_count }}</div></div>
+      <div class="stat"><div class="k">Ready</div><div class="v">{{ done_count }}</div></div>
+    </div>
+    <p class="muted">Pick a transcript from the list to read it or save it as Word, or start a new one.</p>
+    <div class="actions"><a class="btn" href="{% url 'upload' %}">New transcription</a></div>
+  {% else %}
+    <a class="first-drop" href="{% url 'upload' %}">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+      <strong>Start your first transcript</strong>
+      <span>Choose an interview recording. MP3, WAV, M4A, OGG or MP4, any length.</span>
+    </a>
+  {% endif %}
+</div>
+{% else %}
+<div class="wrap">
+  <div class="page-head">
+    <div>
+      <div class="eyebrow">Hello, {{ user.display_name }}</div>
+      <h1>Transcripts</h1>
+    </div>
+    {% if user.is_approved %}
+      <a class="btn" href="{% url 'upload' %}">
+        New upload
+      </a>
+    {% endif %}
+  </div>
+
+  {% if not user.is_approved %}
+    <div class="notice info"><strong>Your account is waiting for approval.</strong>
+      {% if SUPPORT_WHATSAPP %}For faster activation, <a href="https://wa.me/{{ SUPPORT_WHATSAPP }}">message us on WhatsApp</a>.{% endif %}</div>
+  {% endif %}
+
+  <div class="stats">
+    {% if BILLING_ENABLED %}
+      <div class="stat"><div class="k">Minutes left</div><div class="v">{{ balance }}</div><a class="small" href="{% url 'buy_credits' %}">Buy more →</a></div>
+    {% else %}
+      <div class="stat"><div class="k">Minutes transcribed</div><div class="v">{{ total_minutes }}</div></div>
+    {% endif %}
+    <div class="stat"><div class="k">In progress</div><div class="v">{{ active_count }}</div></div>
+    <div class="stat"><div class="k">Ready</div><div class="v">{{ done_count }}</div></div>
+  </div>
+
+  {% if jobs %}
+    <div class="job-list">
+      {% for job in jobs %}
+      <a class="job-row" href="{{ job.get_absolute_url }}">
+        <div>
+          <div class="job-title">{{ job.title }}</div>
+          <div class="job-meta">{{ job.interview_type }} · {{ job.duration_display }} · {{ job.created_at|date:"d M Y, H:i" }}{% if job.status != "done" and job.has_partial %} · done up to {{ job.covered_display }}{% endif %}</div>
+          {% if not job.is_finished and not job.stalled %}<div class="progress" style="margin-top:.5rem;max-width:360px"><div style="width:{{ job.progress }}%"></div></div>{% endif %}
+        </div>
+        <span class="tag hide-sm">{% if job.translate or job.has_english %}বাংলা + English{% else %}বাংলা{% endif %}</span>
+        {% if job.stalled %}<span class="pill stopped">Stopped</span>
+        {% else %}<span class="pill {{ job.status }}">{{ job.get_status_display }}</span>{% endif %}
+      </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="card empty">
+      <div class="icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/></svg></div>
+      <h3>No recordings yet</h3>
+      <p class="muted">Upload an interview to get a clean Bangla transcript.</p>
+      {% if user.is_approved %}<a class="btn" href="{% url 'upload' %}">Upload a recording</a>{% endif %}
+    </div>
+  {% endif %}
+</div>
+{% endif %}
+{% if active_count and not DESKTOP %}<script>setTimeout(function () { location.reload(); }, 15000);</script>{% endif %}
+{% endblock %}

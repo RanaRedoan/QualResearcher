@@ -1,0 +1,5 @@
+# Extra packages for running as a public website (APP_MODE=saas) on a Linux server.
+-r requirements.txt
+gunicorn>=23
+psycopg[binary]>=3.2
+redis>=5

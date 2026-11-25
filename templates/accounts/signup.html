@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Create account — {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<section>
+  <div class="narrow" style="max-width:520px">
+    <h1>Create your account</h1>
+    {% if LOCAL_MODE %}
+      <p class="muted">This account lives only on this computer. The first account created becomes the admin.</p>
+    {% else %}
+      <p class="muted">{% if TRIAL_MINUTES %}After approval you get {{ TRIAL_MINUTES }} free minutes to try it.{% endif %}</p>
+    {% endif %}
+    <form class="form-card" method="post">
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+      {% include "_field.html" with field=form.full_name %}
+      {% include "_field.html" with field=form.email %}
+      {% include "_field.html" with field=form.organization %}
+      {% include "_field.html" with field=form.phone %}
+      {% include "_field.html" with field=form.password1 %}
+      {% include "_field.html" with field=form.password2 %}
+      {% include "_field.html" with field=form.accept_terms %}
+      <button class="btn" type="submit" style="width:100%">Create account</button>
+      <p class="small muted" style="margin:1rem 0 0">Already have an account? <a href="{% url 'login' %}">Log in</a></p>
+    </form>
+  </div>
+</section>
+{% endblock %}

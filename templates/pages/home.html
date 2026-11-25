@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <h1>Bangla interviews, transcribed word for word.</h1>
+      <p class="lead">Upload an IDI, KII or FGD recording. Get a verbatim Bangla transcript, with an English translation when you want one, in a plain Word file your team can start coding today.</p>
+      <div class="actions">
+        <a class="btn lg" href="{% url 'signup' %}">Create an account</a>
+        <a class="btn lg secondary" href="#how">See how it works</a>
+      </div>
+      <p class="small faint" style="margin-top:1.3rem">Recordings of several hours are fine. Audio is deleted after the number of days you choose.{% if TRIAL_MINUTES %} New accounts get {{ TRIAL_MINUTES }} free minutes after approval.{% endif %}</p>
+    </div>
+    <div>
+      <div class="sample" aria-label="Example transcript">
+        <div class="bar"><span>Example transcript</span><span class="seg"><span class="on">বাংলা + English</span><span>বাংলা</span></span></div>
+        <div class="body">
+          <div class="row"><div class="who q">প্রশ্নকর্তা</div><div class="bn">লোন নেওয়ার পর সংসারে কী কী পরিবর্তন আসলো?</div><div class="en">What changed in your household after you took the loan?</div></div>
+          <div class="row"><div class="who">উত্তরদাতা</div><div class="bn">আ… প্রথমে তো ভালোই লাগছিল, মানে কিস্তি দিতে পারতাম। [হাসি]</div><div class="en">Uh… at first it felt good, I mean I could pay the instalments. [laughs]</div></div>
+          <div class="row"><div class="who">উত্তরদাতা</div><div class="bn">পরে বন্যার সময় থেকে [দীর্ঘ নীরবতা] অনেক কষ্ট হইছে।</div><div class="en">Later, from the time of the flood [long pause] it has been very hard.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <h2>What you get for every recording</h2>
+    <p class="muted" style="max-width:40rem;margin-bottom:1.2rem">Built around how research teams in Bangladesh actually work with interview data.</p>
+    <div class="grid-3">
+      <div class="feature"><h3>Verbatim Bangla</h3><p>Dialect, fillers and repetitions stay as spoken. English words in the speech are written in Bangla script.</p></div>
+      <div class="feature"><h3>English when you need it</h3><p>Choose Bangla only for speed, or add a faithful English translation now or later.</p></div>
+      <div class="feature"><h3>Speakers labelled</h3><p>Interviewer and respondent, or moderator and participants 1, 2, 3 for focus groups.</p></div>
+      <div class="feature"><h3>Watch it happen</h3><p>The transcript appears on screen as it is written, so you can see progress on long files.</p></div>
+      <div class="feature"><h3>Picks up where it stopped</h3><p>If a job is interrupted, you see exactly how far it got, download what is done, and continue from there.</p></div>
+      <div class="feature"><h3>A plain Word report</h3><p>Respondent profile on top, Bangla first, then English. Black text, Hind Siliguri, no timestamps unless you ask.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap">
+    <h2 style="margin-bottom:1.2rem">How it works</h2>
+    <div class="grid-4">
+      <div><div class="step-no">1</div><h3>Create an account</h3><p class="muted">Sign up with your email. Research accounts are approved quickly.</p></div>
+      <div><div class="step-no">2</div><h3>Upload the audio</h3><p class="muted">MP3, WAV, M4A, OGG or MP4. Add the respondent profile if you want it in the report.</p></div>
+      <div><div class="step-no">3</div><h3>We transcribe</h3><p class="muted">Long files are split at natural pauses and transcribed part by part.</p></div>
+      <div><div class="step-no">4</div><h3>Download Word</h3><p class="muted">Review, download, and delete everything with one click when you are done.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band dark">
+  <div class="wrap grid-2" style="align-items:start;gap:2rem">
+    <div>
+      <h2>Your participants' privacy comes first</h2>
+      <p class="muted" style="max-width:30em">Interview audio often comes from vulnerable communities. The service is built so you stay in control of it.</p>
+      <a class="btn secondary" href="{% url 'privacy' %}">Read the privacy and ethics notes</a>
+    </div>
+    <ul class="checks">
+      <li>Audio is deleted automatically after the number of days you choose (up to {{ RETENTION_MAX_DAYS }}).</li>
+      <li>Processed on a paid AI plan, so your recordings are not used for training.</li>
+      <li>Files are never public. Only your account can open them.</li>
+      <li>Every upload asks you to confirm participant consent.</li>
+      <li>Delete a job and its audio and transcript are gone for good.</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <div class="narrow center">
+    <h2>A day of typing, done in minutes.</h2>
+    <p class="muted">A research assistant typically needs about a working day per hour of audio.{% if lowest_rate %} Here it starts from ৳{{ lowest_rate }} per hour of audio.{% endif %}</p>
+    <div class="actions" style="justify-content:center"><a class="btn lg" href="{% url 'signup' %}">Create an account</a></div>
+  </div>
+</section>
+{% endblock %}

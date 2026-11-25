@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% load kothon %}
+{% block title %}{{ job.title }} — {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="wrap job-page">
+  <div class="page-head">
+    <div>
+      {% if not DESKTOP %}<div class="eyebrow"><a href="{% url 'dashboard' %}">← All transcripts</a></div>{% endif %}
+      <h1>{{ job.title }}</h1>
+      <div class="muted small">{{ job.get_interview_type_display }} · {{ job.duration_display }} · {{ job.created_at|date:"d M Y, H:i" }}{% if DESKTOP and job_key_name %} · Gemini key: {{ job_key_name }}{% endif %}</div>
+    </div>
+    {% if job.status == "done" %}
+    <div class="downloads">
+      {% if DESKTOP %}{% include "transcription/_export.html" with kind="docx" label="Save as Word" cls="" title="Saves the file and opens it in Word" %}
+      {% else %}{% include "transcription/_export.html" with kind="docx" label="Word" cls="" %}{% endif %}
+      {% include "transcription/_export.html" with kind="docx-ts" label="With timestamps" cls="secondary" %}
+      {% if job.has_english %}{% include "transcription/_export.html" with kind="docx-table" label="Side by side" cls="secondary" %}{% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  {% if DESKTOP %}{% with le=request.session.last_export %}{% if le and le.job == job.public_id|stringformat:"s" %}
+    <div class="notice success saved-bar">
+      <span>Saved <strong>{{ le.name }}</strong> in {{ EXPORT_DIR }}</span>
+      <form method="post" action="{% url 'desktop_reveal' %}" class="inline-form">{% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <button class="btn secondary sm" name="what" value="open" type="submit">Open</button>
+        <button class="btn secondary sm" name="what" value="file" type="submit">Show in folder</button>
+      </form>
+    </div>
+  {% endif %}{% endwith %}{% endif %}
+
+  {% if job.stalled %}
+    <div class="notice warning stop-box">
+      <div>
+        <strong>Stopped at {{ job.covered_display }} of {{ job.duration_display }}</strong>
+        <div class="small">The app was closed or the PC restarted while this was running. {% if job.has_audio %}Nothing done so far is lost.{% else %}The audio has already been deleted, so please upload it again to finish.{% endif %}</div>
+      </div>
+      <div class="downloads">
+        {% if job.has_partial %}{% include "transcription/_export.html" with kind="partial" label="Word, what is done so far" cls="secondary sm" %}{% endif %}
+        {% if job.has_audio %}<form method="post" action="{% url 'job_resume' job.public_id %}" class="inline-form">{% csrf_token %}{% include "transcription/_key_select.html" %}<button class="btn sm" type="submit">Continue from {{ job.covered_display }}</button></form>{% endif %}
+      </div>
+    </div>
+  {% elif not job.is_finished %}
+    <div class="glass progress-card">
+      <div class="progress-top">
+        <strong id="status-label">{{ job.get_status_display }}</strong>
+        <span class="pct" id="pct">{{ job.progress }}%</span>
+      </div>
+      <div class="progress {% if job.progress < 5 %}indeterminate{% endif %}" id="bar-wrap"><div id="bar" style="width: {{ job.progress }}%"></div></div>
+      <p class="small muted" id="status-note" style="margin:.8rem 0 0">{{ job.progress_note|default:"Waiting to start" }}</p>
+      <div class="progress-foot">
+        <span>Transcribed up to <strong id="covered">{{ job.covered_display }}</strong> of {{ job.duration_display }}. {% if DESKTOP %}You can look at other transcripts meanwhile. Keep {{ SITE_NAME }} open until this finishes.{% else %}You can close this page; work continues while the black start window stays open.{% endif %}</span>
+        <span id="partial-btn" {% if not job.has_partial %}hidden{% endif %}>{% include "transcription/_export.html" with kind="partial" label="Word, what is done so far" cls="secondary sm" %}</span>
+      </div>
+    </div>
+  {% elif job.status == "failed" %}
+    <div class="notice error stop-box">
+      <div>
+        <strong>Stopped at {{ job.covered_display }} of {{ job.duration_display }}</strong>{% if BILLING_ENABLED %} · minutes refunded{% endif %}
+        <div class="small" style="margin-top:.2rem">{{ job.error|truncatechars:300 }}</div>
+      </div>
+      <div class="downloads">
+        {% if job.has_partial %}{% include "transcription/_export.html" with kind="partial" label="Word, what is done so far" cls="secondary sm" %}{% endif %}
+        {% if job.has_audio %}<form method="post" action="{% url 'job_resume' job.public_id %}" class="inline-form">{% csrf_token %}{% include "transcription/_key_select.html" %}<button class="btn sm" type="submit">{% if job.has_partial %}Continue from {{ job.covered_display }}{% else %}Try again{% endif %}</button></form>{% endif %}
+      </div>
+    </div>
+  {% endif %}
+
+  {% if job.status != "done" %}
+    <section class="panel" id="live-wrap" {% if not job.has_partial %}hidden{% endif %}>
+      <div class="panel-head">
+        <h2>{% if job.is_finished or job.stalled %}Transcribed so far{% else %}<span class="live-dot"></span>Live transcript{% endif %}
+          <span class="sub">{% if job.is_finished or job.stalled %}Everything below is saved.{% else %}Text appears here as it is written.{% endif %}</span></h2>
+        {% if not job.is_finished and not job.stalled %}
+        <label class="follow"><input type="checkbox" id="follow" checked><span class="sw"></span>Follow latest</label>
+        {% endif %}
+      </div>
+      <div class="scrollbox" id="live-scroll" tabindex="0" aria-label="Transcript so far">
+        <div class="transcript live" id="live">
+          {% for seg in job.available_segments %}
+          <div class="turn{% if seg.speaker == 'Interviewer' or seg.speaker == 'Moderator' %} q{% endif %}{% if seg.uncertain %} uncertain{% endif %}">
+            <div class="who"><span class="role">{{ seg.speaker|bn_label }}</span> <span class="t">{{ seg.start|hms }}</span></div>
+            <div class="text">{{ seg.bn }}</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="panel-foot">
+        <span id="turn-count">{{ job.available_segments|length }} turn{{ job.available_segments|length|pluralize }} so far · reached {{ job.covered_display }}</span>
+        <span class="faint">Scroll inside the box to read back</span>
+      </div>
+    </section>
+  {% endif %}
+
+  {% if job.status == "done" %}
+    {% if job.error %}<div class="notice warning small">{{ job.error }}</div>{% endif %}
+    {% if job.uncertain_count %}<div class="notice warning small">{{ job.uncertain_count }} passage{{ job.uncertain_count|pluralize }} {{ job.uncertain_count|pluralize:"was,were" }} hard to hear (underlined in yellow). Please check against the audio.</div>{% endif %}
+
+    <section class="panel" id="done-panel">
+      <div class="panel-head">
+        <h2>Transcript <span class="sub">{{ job.segments|length }} turn{{ job.segments|length|pluralize }} · {{ job.duration_display }}</span></h2>
+        {% if job.has_english %}
+          <div class="tabs" id="tabs">
+            <button type="button" class="on" data-view="view-both">Both</button>
+            <button type="button" data-view="view-bn">বাংলা</button>
+            <button type="button" data-view="view-en">English</button>
+          </div>
+        {% else %}
+          <form method="post" action="{% url 'job_translate' job.public_id %}" style="margin:0">{% csrf_token %}
+            <button class="btn secondary sm" type="submit">+ Add English translation</button>
+          </form>
+        {% endif %}
+      </div>
+      <div class="scrollbox tall" tabindex="0" aria-label="Transcript">
+        <div class="transcript view-both" id="transcript">
+          {% for seg in job.segments %}
+          <div class="turn{% if seg.speaker == 'Interviewer' or seg.speaker == 'Moderator' %} q{% endif %}{% if seg.uncertain %} uncertain{% endif %}">
+            <div class="who"><span class="role">{{ seg.speaker|bn_label }}</span> <span class="t">{{ seg.start|hms }}</span></div>
+            <div class="text">{{ seg.bn }}</div>
+            {% if seg.en %}<div class="en">{{ seg.en }}</div>{% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="panel-foot"><span>Scroll inside the box to read the whole transcript.</span><span class="faint">{% if DESKTOP %}Use “Save as Word” above to keep it.{% else %}Download the Word file above to keep it.{% endif %}</span></div>
+    </section>
+  {% endif %}
+
+  <div class="glass" style="border-radius:10px;padding:.8rem 1.1rem;margin-top:1rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap">
+    <div class="small muted">
+      {% if job.has_audio %}Audio is deleted automatically on {{ job.audio_delete_after|date:"d M Y, H:i" }}.
+      {% else %}Audio file deleted. The transcript stays until you delete it.{% endif %}
+    </div>
+    {% if job.is_finished or job.stalled %}
+    <form method="post" action="{% url 'job_delete' job.public_id %}" onsubmit="return confirm('Delete this transcript and its audio for good?');">
+      {% csrf_token %}<button class="btn danger sm" type="submit">Delete</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+{% if job.status == "done" and job.has_english %}
+<script>
+document.querySelectorAll("#tabs button").forEach(function (b) {
+  b.addEventListener("click", function () {
+    document.querySelectorAll("#tabs button").forEach(function (x) { x.classList.remove("on"); });
+    b.classList.add("on");
+    document.getElementById("transcript").className = "transcript " + b.dataset.view;
+  });
+});
+</script>
+{% endif %}
+{% if job.status != "done" %}
+<script>
+(function () {
+  var box = document.getElementById("live-scroll");
+  var follow = document.getElementById("follow");
+  function toBottom() { box.scrollTop = box.scrollHeight; }
+  toBottom();
+  if (!follow) return;                       // stopped or failed: just show the end
+
+  box.addEventListener("scroll", function () {
+    follow.checked = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
+  });
+  follow.addEventListener("change", function () { if (follow.checked) toBottom(); });
+
+  var lastKey = "";
+  function esc(s) { var e = document.createElement("div"); e.textContent = s; return e.innerHTML; }
+  function renderLive(d) {
+    document.getElementById("covered").textContent = d.covered;
+    var key = d.count + ":" + d.chars;
+    if (key === lastKey) return;
+    lastKey = key;
+    var keep = box.scrollTop;
+    document.getElementById("live").innerHTML = d.turns.map(function (t) {
+      return '<div class="turn' + (t.q ? ' q' : '') + (t.u ? ' uncertain' : '') + '"><div class="who"><span class="role">' + esc(t.who) +
+             '</span> <span class="t">' + t.t + '</span></div><div class="text">' + esc(t.text) + '</div></div>';
+    }).join("");
+    document.getElementById("live-wrap").hidden = d.count === 0;
+    document.getElementById("partial-btn").hidden = d.count === 0;
+    document.getElementById("turn-count").textContent = d.count + " turn" + (d.count === 1 ? "" : "s") + " so far · reached " + d.covered;
+    if (follow.checked) toBottom(); else box.scrollTop = keep;
+  }
+  (function poll() {
+    fetch("{% url 'job_status' job.public_id %}", {credentials: "same-origin"})
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d.finished || d.stalled) { location.reload(); return; }
+        renderLive(d);
+        document.getElementById("bar").style.width = d.progress + "%";
+        document.getElementById("bar-wrap").classList.toggle("indeterminate", d.progress < 5);
+        document.getElementById("pct").textContent = d.progress + "%";
+        document.getElementById("status-label").textContent = d.label;
+        document.getElementById("status-note").textContent = d.note || "";
+        setTimeout(poll, 4000);
+      })
+      .catch(function () { setTimeout(poll, 8000); });
+  })();
+})();
+</script>
+{% endif %}
+{% endblock %}

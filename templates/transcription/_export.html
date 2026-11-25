@@ -1,0 +1,1 @@
+{% if DESKTOP %}<form method="post" action="{% url 'desktop_save' job.public_id kind %}" class="inline-form">{% csrf_token %}<button class="btn {{ cls }}" type="submit"{% if title %} title="{{ title }}"{% endif %}>{{ label }}</button></form>{% else %}<a class="btn {{ cls }}" href="{% url 'job_download' job.public_id kind %}">{{ label }}</a>{% endif %}

@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}New upload — {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="narrow">
+  <div class="page-head">
+    <div>{% if not DESKTOP %}<div class="eyebrow"><a href="{% url 'dashboard' %}">← Transcripts</a></div>{% endif %}<h1>{% if DESKTOP %}New transcription{% else %}New upload{% endif %}</h1></div>
+    {% if BILLING_ENABLED %}<span class="muted">{{ balance }} minutes available</span>{% endif %}
+  </div>
+
+  <form class="card" method="post" enctype="multipart/form-data" id="upload-form">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+
+    <label class="dropzone" id="dropzone">
+      {{ form.audio }}
+      <div class="icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg></div>
+      <div class="title">Drop the recording here, or click to choose</div>
+      <div class="small faint">MP3, WAV, M4A, OGG, MP4 · long recordings are fine</div>
+      <div class="file-chosen" id="file-chosen"></div>
+    </label>
+    {{ form.audio.errors }}
+
+    <div class="section-label">Output</div>
+    <div class="options">
+      <label class="option">
+        <input type="radio" name="translate_choice" value="bn" {% if not form.translate.value %}checked{% endif %}>
+        <strong>বাংলা ট্রান্সক্রিপ্ট</strong>
+        <span>Fastest, and uses about half the AI time and credits.</span>
+      </label>
+      <label class="option">
+        <input type="radio" name="translate_choice" value="both" {% if form.translate.value %}checked{% endif %}>
+        <strong>বাংলা + English</strong>
+        <span>Adds a full English translation. Takes longer.</span>
+      </label>
+    </div>
+    <input type="checkbox" name="translate" id="id_translate" hidden {% if form.translate.value %}checked{% endif %}>
+    <p class="small faint" style="margin:.5rem 0 0">You can add the English translation later from the transcript page.</p>
+    {% if form.gemini_key %}{% if form.gemini_key.field.choices|length > 1 %}
+    <div class="form-grid" style="margin-top:.9rem">{% include "_field.html" with field=form.gemini_key %}</div>
+    {% else %}<input type="hidden" name="gemini_key" value="{{ form.gemini_key.value|default:'' }}">{% endif %}{% endif %}
+
+    <div class="section-label">Details</div>
+    {% include "_field.html" with field=form.title %}
+    <div class="form-grid">
+      {% include "_field.html" with field=form.interview_type %}
+      {% include "_field.html" with field=form.expected_speakers %}
+    </div>
+    {% include "_field.html" with field=form.context_notes %}
+
+    <details class="more">
+      <summary>Respondent profile <span class="optional">· printed at the top of the Word file</span></summary>
+      <div class="form-grid">
+        {% include "_field.html" with field=form.respondent_id %}
+        {% include "_field.html" with field=form.interview_date %}
+        {% include "_field.html" with field=form.age %}
+        {% include "_field.html" with field=form.gender %}
+        {% include "_field.html" with field=form.location %}
+        {% include "_field.html" with field=form.occupation %}
+        {% include "_field.html" with field=form.education %}
+        {% include "_field.html" with field=form.interviewer %}
+      </div>
+      {% include "_field.html" with field=form.other %}
+    </details>
+
+    <div class="form-grid">{% include "_field.html" with field=form.retention_days %}</div>
+    {% include "_field.html" with field=form.consent %}
+
+    <button class="btn lg" type="submit" id="submit-btn" style="width:100%">Start transcription</button>
+    <p class="small faint center" id="upload-note" style="display:none;margin:.8rem 0 0">{% if DESKTOP %}Copying the recording… large files take a few seconds.{% else %}Uploading… large files can take a minute. Keep this tab open.{% endif %}</p>
+  </form>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  var input = document.getElementById("id_audio"), zone = document.getElementById("dropzone"),
+      chosen = document.getElementById("file-chosen"), title = document.getElementById("id_title"),
+      translate = document.getElementById("id_translate");
+  function mb(n) { return (n / 1048576).toFixed(n > 104857600 ? 0 : 1) + " MB"; }
+  input.addEventListener("change", function () {
+    if (!input.files.length) return;
+    var f = input.files[0];
+    chosen.textContent = f.name + " · " + mb(f.size);
+    if (!title.value) title.value = f.name.replace(/\.[^.]+$/, "").replace(/[_]+/g, " ");
+  });
+  ["dragenter", "dragover"].forEach(function (e) { zone.addEventListener(e, function () { zone.classList.add("drag"); }); });
+  ["dragleave", "drop"].forEach(function (e) { zone.addEventListener(e, function () { zone.classList.remove("drag"); }); });
+  // a recording dropped anywhere on the page counts, not only on the box
+  document.addEventListener("dragover", function (e) { e.preventDefault(); zone.classList.add("drag"); });
+  document.addEventListener("drop", function (e) {
+    if (zone.contains(e.target)) return;
+    e.preventDefault(); zone.classList.remove("drag");
+    if (e.dataTransfer && e.dataTransfer.files.length) {
+      input.files = e.dataTransfer.files;
+      input.dispatchEvent(new Event("change"));
+    }
+  });
+  document.querySelectorAll('input[name="translate_choice"]').forEach(function (r) {
+    r.addEventListener("change", function () { translate.checked = r.value === "both" && r.checked; });
+  });
+  document.getElementById("upload-form").addEventListener("submit", function () {
+    var b = document.getElementById("submit-btn");
+    b.disabled = true; b.textContent = "Uploading…";
+    document.getElementById("upload-note").style.display = "block";
+  });
+})();
+</script>
+{% endblock %}

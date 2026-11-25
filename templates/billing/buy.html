@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}Buy credits — {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="narrow">
+  <div class="app-head"><h1>Buy credits</h1><a href="{% url 'pricing' %}">Compare plans</a></div>
+  <div class="grid-2">
+    <div class="card">
+      <h3>1 · Pay with bKash</h3>
+      <ol class="muted small" style="padding-left:1.1rem">
+        <li>Open the bKash app → <strong>Send Money</strong>.</li>
+        <li>Send to <strong style="color:var(--ink)">{{ BKASH_NUMBER|default:"[bKash number not set]" }}</strong> ({{ BKASH_ACCOUNT_TYPE }}).</li>
+        <li>Send the exact plan price:</li>
+      </ol>
+      <ul class="small">
+        {% for plan in plans %}<li><strong>{{ plan.name }}</strong> — ৳{{ plan.price_bdt|intcomma }} ({{ plan.hours|floatformat:"-1" }} h)</li>{% endfor %}
+      </ul>
+      <p class="small muted">4. Copy the <strong>Transaction ID</strong> from the confirmation SMS.</p>
+    </div>
+    <form class="form-card" method="post">
+      <h3>2 · Submit your Transaction ID</h3>
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+      {% for field in form %}{% include "_field.html" %}{% endfor %}
+      <button class="btn" type="submit" style="width:100%">Submit for verification</button>
+      <p class="small muted" style="margin:.8rem 0 0">Credits appear once we verify the payment, usually within a few hours.</p>
+    </form>
+  </div>
+</div>
+{% endblock %}

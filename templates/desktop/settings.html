@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Settings — {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="narrow">
+  <div class="page-head"><h1>Settings</h1></div>
+
+  <section class="set-group">
+    <h2>Gemini API keys</h2>
+    <p class="small muted">Give each key a name. You choose which key to use for each recording on the New transcription screen; the default key is picked unless you change it.
+      <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Open AI Studio</a></p>
+    <div class="key-table">
+      {% for k in keys %}
+      <div class="key-line">
+        <div class="key-name">{{ k.name }}{% if k.default %} <span class="tag">Default</span>{% endif %}<span class="key-masked">{{ k.masked }}</span></div>
+        <span class="key-result" id="kr-{{ k.id }}" role="status"></span>
+        <div class="key-btns">
+          <button type="button" class="btn secondary sm" data-test-key="{{ k.id }}">Test</button>
+          {% if not k.default %}<form method="post" action="{% url 'desktop_key_action' k.id %}" class="inline-form">{% csrf_token %}<button class="btn secondary sm" name="action" value="default">Make default</button></form>{% endif %}
+          <form method="post" action="{% url 'desktop_key_action' k.id %}" class="inline-form" onsubmit="return confirm('Remove the key “{{ k.name|escapejs }}” from this computer?');">{% csrf_token %}<button class="btn danger sm" name="action" value="delete">Delete</button></form>
+        </div>
+      </div>
+      {% empty %}<p class="small muted">No keys yet.</p>{% endfor %}
+    </div>
+
+    <details class="more add-key" {% if not keys %}open{% endif %}>
+      <summary>Add another key</summary>
+      <form method="post" action="{% url 'desktop_key_add' %}" autocomplete="off">{% csrf_token %}
+        <div class="field">
+          <label for="id_key_name">Name</label>
+          <input type="text" name="key_name" id="id_key_name" maxlength="60" placeholder="e.g. The Rana">
+        </div>
+        {% include "desktop/_key_test.html" with label="Key" %}
+        <label class="radio"><input type="checkbox" name="make_default"> Make this the default key</label>
+        <div style="margin-top:.7rem"><button class="btn" type="submit">Add key</button></div>
+      </form>
+    </details>
+    <p class="small faint">Keys are kept only on this computer. For real interviews use a key with billing turned on: on the free tier Google may use what you send to improve its products.</p>
+  </section>
+
+  <form method="post" class="settings" autocomplete="off">
+    {% csrf_token %}
+    <section class="set-group">
+      <h2>You</h2>
+      <div class="field">
+        <label for="id_name">Name</label>
+        <input type="text" name="name" id="id_name" value="{{ cfg.name }}" maxlength="150">
+      </div>
+    </section>
+
+    <section class="set-group">
+      <h2>Word files</h2>
+      <div class="field">
+        <label for="id_export_dir">Save Word files in this folder</label>
+        <input type="text" name="export_dir" id="id_export_dir" value="{% if cfg.export_dir %}{{ cfg.export_dir }}{% else %}{{ default_export }}{% endif %}">
+        <div class="help">“Save as Word” puts files here and opens them in Word.</div>
+      </div>
+    </section>
+
+    <section class="set-group">
+      <h2>Transcription</h2>
+      <fieldset>
+        <legend>English words spoken inside Bangla</legend>
+        <label class="radio"><input type="radio" name="english_words" value="bangla" {% if cfg.english_words != "latin" %}checked{% endif %}> In Bangla script (লোন, এনজিও)</label>
+        <label class="radio"><input type="radio" name="english_words" value="latin" {% if cfg.english_words == "latin" %}checked{% endif %}> In English letters (loan, NGO)</label>
+      </fieldset>
+    </section>
+
+    <div class="set-actions"><button class="btn" type="submit">Save settings</button></div>
+  </form>
+
+  <section class="set-group">
+    <h2>About</h2>
+    <p class="small muted">{{ SITE_NAME }} version {{ APP_VERSION }}. {% include "_credit.html" %}.
+      {% if GITHUB_REPO %}<a href="https://github.com/{{ GITHUB_REPO }}/releases/latest" target="_blank" rel="noopener">Check for a newer version</a>.{% endif %}</p>
+    <form method="post" action="{% url 'desktop_reveal' %}" class="inline-form">{% csrf_token %}
+      <input type="hidden" name="what" value="data"><input type="hidden" name="next" value="{{ request.get_full_path }}">
+      <button class="btn secondary sm" type="submit">Open the app's data folder</button>
+      <span class="small faint">{{ data_dir }} · database, temporary audio and your settings</span>
+    </form>
+  </section>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.querySelectorAll("[data-test-key]").forEach(function (b) {
+  b.addEventListener("click", function () {
+    var id = b.dataset.testKey, out = document.getElementById("kr-" + id), body = new FormData();
+    body.append("key_id", id);
+    body.append("csrfmiddlewaretoken", document.querySelector("[name=csrfmiddlewaretoken]").value);
+    b.disabled = true; out.className = "key-result"; out.textContent = "Testing…";
+    fetch("{% url 'desktop_test_key' %}", {method: "POST", body: body, credentials: "same-origin"})
+      .then(function (r) { return r.json(); })
+      .then(function (d) { out.className = "key-result " + (d.ok ? "ok" : "bad"); out.textContent = d.message; })
+      .catch(function () { out.className = "key-result bad"; out.textContent = "The test could not run."; })
+      .finally(function () { b.disabled = false; });
+  });
+});
+</script>
+{% endblock %}

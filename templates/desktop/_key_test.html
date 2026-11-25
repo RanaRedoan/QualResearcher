@@ -1,0 +1,30 @@
+{# Paste box for the Gemini key with show/hide and a Test button. #}
+<div class="field">
+  <label for="id_key">{{ label|default:"Gemini API key" }}</label>
+  <div class="key-row">
+    <input type="password" name="gemini_api_key" id="id_key" autocomplete="off" spellcheck="false" placeholder="{{ placeholder|default:'Paste your key here' }}" value="{{ value|default:'' }}">
+    <button type="button" class="btn secondary" id="key-show">Show</button>
+    <button type="button" class="btn secondary" id="key-test">Test key</button>
+  </div>
+  <div class="key-result" id="key-result" role="status" aria-live="polite"></div>
+</div>
+<script>
+(function () {
+  var input = document.getElementById("id_key"), out = document.getElementById("key-result");
+  document.getElementById("key-show").addEventListener("click", function () {
+    input.type = input.type === "password" ? "text" : "password";
+    this.textContent = input.type === "password" ? "Show" : "Hide";
+  });
+  document.getElementById("key-test").addEventListener("click", function () {
+    var btn = this, body = new FormData();
+    body.append("gemini_api_key", input.value.trim());
+    body.append("csrfmiddlewaretoken", document.querySelector("[name=csrfmiddlewaretoken]").value);
+    btn.disabled = true; out.className = "key-result"; out.textContent = "Testing…";
+    fetch("{% url 'desktop_test_key' %}", {method: "POST", body: body, credentials: "same-origin"})
+      .then(function (r) { return r.json(); })
+      .then(function (d) { out.className = "key-result " + (d.ok ? "ok" : "bad"); out.textContent = d.message; })
+      .catch(function () { out.className = "key-result bad"; out.textContent = "The test could not run."; })
+      .finally(function () { btn.disabled = false; });
+  });
+})();
+</script>

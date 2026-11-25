@@ -1,0 +1,66 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ SITE_NAME }} — {{ SITE_TAGLINE }}{% endblock %}</title>
+  <meta name="description" content="{% block description %}Verbatim Bangla transcripts of research interviews, with optional English translation, in a plain Word file.{% endblock %}">
+  <meta property="og:title" content="{{ SITE_NAME }}">
+  <meta property="og:description" content="{{ SITE_TAGLINE }}">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231D6B43'/%3E%3Ccircle cx='15' cy='15' r='7' fill='none' stroke='%23fff' stroke-width='2.4'/%3E%3Cpath d='M19.5 19.5L24 24' stroke='%23fff' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E">
+  <meta name="theme-color" content="#fbfcfa">
+  <link rel="stylesheet" href="{% static 'css/site.css' %}?v={{ ASSET_VERSION }}">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="{% url 'home' %}"><svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#1D6B43"/><circle cx="15" cy="15" r="7" fill="none" stroke="#fff" stroke-width="2.4"/><path d="M19.5 19.5L24 24" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg><span>{{ SITE_NAME }}</span></a>
+    <nav class="nav">
+      {% if user.is_authenticated %}
+        <a href="{% url 'dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">Transcripts</a>
+        <a href="{% url 'upload' %}" class="hide-sm {% if request.resolver_match.url_name == 'upload' %}active{% endif %}">New upload</a>
+        {% if BILLING_ENABLED %}<a href="{% url 'billing' %}">Credits</a>{% endif %}
+        <a href="{% url 'profile' %}" class="hide-sm">Account</a>
+        {% if user.is_staff %}<a href="{% url 'admin:index' %}" class="hide-sm">Admin</a>{% endif %}
+        <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="linklike" type="submit">Log out</button></form>
+      {% else %}
+        {% if not LOCAL_MODE %}
+        <a href="{% url 'home' %}#how" class="hide-sm">How it works</a>
+        <a href="{% url 'pricing' %}">Pricing</a>
+        <a href="{% url 'privacy' %}" class="hide-sm">Privacy and ethics</a>
+        {% endif %}
+        <a href="{% url 'login' %}">Log in</a>
+        <a class="btn sm" href="{% url 'signup' %}">{% if LOCAL_MODE %}Create account{% else %}Get started{% endif %}</a>
+      {% endif %}
+    </nav>
+  </div>
+</header>
+
+<main>
+  {% if messages %}
+    <div class="wrap">
+      {% for message in messages %}<div class="notice {{ message.tags }}">{{ message }}</div>{% endfor %}
+    </div>
+  {% endif %}
+  {% block content %}{% endblock %}
+</main>
+
+{% if not LOCAL_MODE %}<footer class="site-footer">
+  <div class="wrap">
+    <div>
+      <strong>{{ SITE_NAME }}</strong><br>
+      <span class="small">{{ SITE_TAGLINE }}</span><br>
+      <span class="small">{% include "_credit.html" %}</span>
+    </div>
+    <div>
+      <a href="{% url 'home' %}#how">How it works</a>
+      <a href="{% url 'pricing' %}">Pricing</a>
+      <a href="{% url 'privacy' %}">Privacy and ethics</a>
+      <a href="{% url 'terms' %}">Terms</a>
+    </div>
+  </div>
+</footer>{% else %}<footer class="site-footer"><div class="wrap"><span>{{ SITE_NAME }} · runs on this computer · audio leaves it only while being sent to Gemini</span>{% include "_credit.html" %}</div></footer>{% endif %}
+{% if SUPPORT_WHATSAPP %}<a class="wa-float" href="https://wa.me/{{ SUPPORT_WHATSAPP }}" target="_blank" rel="noopener">WhatsApp us</a>{% endif %}
+{% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,116 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ SITE_NAME }}{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/site.css' %}?v={{ ASSET_VERSION }}">
+</head>
+<body class="app">
+<aside class="sidebar">
+  <div class="side-brand">
+    <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#1D6B43"/><circle cx="15" cy="15" r="7" fill="none" stroke="#fff" stroke-width="2.4"/><path d="M19.5 19.5L24 24" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg>
+    <span>{{ SITE_NAME }}</span>
+  </div>
+  <a class="btn side-new" href="{% url 'upload' %}" title="Ctrl+N">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+    New transcription
+  </a>
+  {% with name=request.resolver_match.url_name %}
+  <nav class="side-nav">
+    <a href="{% url 'dashboard' %}" class="{% if name == 'dashboard' or name == 'job_detail' %}on{% endif %}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/></svg>
+      Transcripts</a>
+    <a href="{% url 'desktop_settings' %}" class="{% if name == 'desktop_settings' %}on{% endif %}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Settings</a>
+  </nav>
+  {% endwith %}
+  <form class="side-foot" method="post" action="{% url 'desktop_reveal' %}">{% csrf_token %}
+    <input type="hidden" name="what" value="exports"><input type="hidden" name="next" value="{{ request.get_full_path }}">
+    <button type="submit" class="side-link" title="{{ EXPORT_DIR }}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+      Saved Word files</button>
+  </form>
+</aside>
+
+<section class="listpane" aria-label="Transcripts">
+  <div class="list-head">
+    <input type="search" id="list-filter" placeholder="Search transcripts" aria-label="Search transcripts">
+  </div>
+  <div class="list" id="job-list">
+    {% for j in SIDEBAR_JOBS %}
+    {% with pid=j.public_id|stringformat:"s" %}
+    <a class="li{% if pid == CURRENT_JOB %} sel{% endif %}" href="{{ j.get_absolute_url }}" data-id="{{ pid }}" data-title="{{ j.title|lower }}">
+      <span class="li-title">{{ j.title }}</span>
+      <span class="li-meta"><span class="st {% if j.stalled %}stopped{% else %}{{ j.status }}{% endif %}">{% if j.stalled %}Stopped{% else %}{{ j.get_status_display }}{% endif %}</span><span>{{ j.duration_display }}</span><span>{{ j.created_at|date:"d M" }}</span></span>
+      {% if not j.is_finished and not j.stalled %}<span class="li-bar"><span style="width:{{ j.progress }}%"></span></span>{% endif %}
+    </a>
+    {% endwith %}
+    {% empty %}
+    <p class="list-empty">No transcripts yet.</p>
+    {% endfor %}
+  </div>
+</section>
+
+<main class="content" id="content">
+  {% if messages %}
+    {% for message in messages %}<div class="notice {{ message.tags }}">{{ message }}</div>{% endfor %}
+  {% endif %}
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="statusbar">
+  <span class="sb-item">{% if KEY_SET %}<span class="sb-dot ok"></span>Default key: {{ DEFAULT_KEY_NAME|default:"set" }}{% else %}<span class="sb-dot bad"></span><a href="{% url 'desktop_settings' %}">No Gemini key</a>{% endif %}</span>
+  <span class="sb-item" id="sb-running">{% if RUNNING_COUNT %}{{ RUNNING_COUNT }} transcribing — keep the app open{% else %}Idle{% endif %}</span>
+  <span class="sb-spacer"></span>
+  <a class="sb-item sb-update" id="sb-update" href="#" target="_blank" rel="noopener" hidden></a>
+  <span class="sb-item">{% include "_credit.html" %}</span>
+  <span class="sb-item">v{{ APP_VERSION }}</span>
+</footer>
+
+<script>
+(function () {
+  // filter the list as you type
+  var filter = document.getElementById("list-filter");
+  filter.addEventListener("input", function () {
+    var q = filter.value.trim().toLowerCase();
+    document.querySelectorAll("#job-list .li").forEach(function (a) {
+      a.hidden = q && a.dataset.title.indexOf(q) === -1;
+    });
+  });
+  // Ctrl+N: new transcription
+  document.addEventListener("keydown", function (e) {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "n") { e.preventDefault(); location.href = "{% url 'upload' %}"; }
+  });
+  // keep status and progress in the list current
+  function refresh() {
+    fetch("{% url 'desktop_jobs' %}", {credentials: "same-origin"}).then(function (r) { return r.json(); }).then(function (d) {
+      d.jobs.forEach(function (j) {
+        var a = document.querySelector('#job-list .li[data-id="' + j.id + '"]');
+        if (!a) return;
+        var st = a.querySelector(".st");
+        st.className = "st " + j.status; st.textContent = j.label;
+        var bar = a.querySelector(".li-bar");
+        var active = ["queued", "processing", "translating"].indexOf(j.status) !== -1;
+        if (bar && !active) bar.remove();
+        if (bar && active) bar.firstElementChild.style.width = j.progress + "%";
+      });
+      document.getElementById("sb-running").textContent = d.running ? d.running + " transcribing — keep the app open" : "Idle";
+      setTimeout(refresh, d.running ? 4000 : 15000);
+    }).catch(function () { setTimeout(refresh, 15000); });
+  }
+  setTimeout(refresh, 4000);
+  var sel = document.querySelector("#job-list .li.sel");
+  if (sel) sel.scrollIntoView({block: "nearest"});
+  // newer version on GitHub?
+  fetch("{% url 'desktop_update' %}").then(function (r) { return r.json(); }).then(function (d) {
+    if (!d.update) return;
+    var u = document.getElementById("sb-update");
+    u.href = d.url; u.textContent = "Version " + d.version + " is available — download"; u.hidden = false;
+  }).catch(function () {});
+})();
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

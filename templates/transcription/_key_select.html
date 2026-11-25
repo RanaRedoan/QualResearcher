@@ -1,0 +1,1 @@
+{% if DESKTOP and gemini_keys|length > 1 %}<select name="gemini_key" class="key-select" aria-label="Gemini key to use" title="Gemini key to use">{% for k in gemini_keys %}<option value="{{ k.id }}"{% if k.id == job_key_id %} selected{% endif %}>Key: {{ k.name }}</option>{% endfor %}</select>{% endif %}

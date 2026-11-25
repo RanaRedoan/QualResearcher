@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} — {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<section>
+  <div class="narrow" style="max-width:480px">
+    <h1>{{ title }}</h1>
+    <p class="muted">{{ body }}</p>
+    <a class="btn" href="{% if user.is_authenticated %}{% url 'dashboard' %}{% else %}{% url 'login' %}{% endif %}">Continue</a>
+  </div>
+</section>
+{% endblock %}

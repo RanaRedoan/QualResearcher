@@ -1,0 +1,11 @@
+# Everything needed to run on your own PC (Windows / Mac / Linux).
+# ffmpeg must also be installed separately (see README).
+Django>=5.2,<6.0
+google-genai>=1.30
+python-docx>=1.1
+python-dotenv>=1.0
+dj-database-url>=2.2
+whitenoise>=6.7
+celery>=5.4
+pytest>=8
+pytest-django>=4.9

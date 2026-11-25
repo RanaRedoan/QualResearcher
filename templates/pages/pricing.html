@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}Pricing — {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<section>
+  <div class="wrap">
+    <div class="center" style="margin-bottom:2.5rem">
+      <h1>Simple prepaid pricing</h1>
+      <p class="lead" style="margin:0 auto">Buy minutes, use them within the validity period. No subscription. Pay with bKash.</p>
+    </div>
+    <div class="grid-3">
+      {% for plan in plans %}
+      <div class="card plan {% if plan.highlight %}highlight{% endif %}">
+        {% if plan.highlight %}<span class="badge-top">MOST POPULAR</span>{% endif %}
+        <h3>{{ plan.name }}</h3>
+        <p class="price">৳{{ plan.price_bdt|intcomma }}</p>
+        <p class="rate">{{ plan.hours|floatformat:"-1" }} hours · ৳{{ plan.rate_per_hour|intcomma }} per hour</p>
+        <ul>
+          <li>Verbatim Bangla, English translation optional</li>
+          <li>Speaker labels and non-verbal cues</li>
+          <li>Plain Word report</li>
+          <li>Valid for {{ plan.validity_days }} days</li>
+        </ul>
+        <a class="btn {% if not plan.highlight %}ghost{% endif %}" href="{% if user.is_authenticated %}{% url 'buy_credits' %}?plan={{ plan.pk }}{% else %}{% url 'signup' %}{% endif %}">Choose {{ plan.name }}</a>
+      </div>
+      {% empty %}
+      <p class="muted">Plans are being set up. Please check back soon.</p>
+      {% endfor %}
+    </div>
+
+    <div class="narrow prose" style="margin-top:3.5rem">
+      <h2>Questions</h2>
+      <h3>How are minutes counted?</h3>
+      <p class="muted">By the length of the recording, rounded up to the next minute. If a job fails, its minutes are returned automatically.</p>
+      <h3>How do I pay?</h3>
+      <p class="muted">Send money by bKash, then enter the Transaction ID (TrxID) in your dashboard. Credits are added once we verify it — usually within a few hours.</p>
+      <h3>How accurate is it?</h3>
+      <p class="muted">Clear recordings with one person speaking at a time come out very well. Noise, echo and people talking over each other lower accuracy. Always check AI transcripts against the audio before analysis.</p>
+      <h3>Need a larger institutional package?</h3>
+      <p class="muted">{% if SUPPORT_WHATSAPP %}<a href="https://wa.me/{{ SUPPORT_WHATSAPP }}">Message us on WhatsApp</a>{% else %}Contact us{% endif %} for volume pricing and invoices.</p>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Account — {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="narrow" style="max-width:560px">
+  <div class="app-head"><h1>Your account</h1></div>
+  <form class="form-card" method="post">
+    {% csrf_token %}
+    <p class="muted small">Signed in as <strong>{{ user.email }}</strong></p>
+    {% for field in form %}{% include "_field.html" %}{% endfor %}
+    <button class="btn" type="submit">Save</button>
+    <a class="btn ghost" href="{% url 'password_change' %}">Change password</a>
+  </form>
+</div>
+{% endblock %}

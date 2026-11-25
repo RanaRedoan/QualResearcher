@@ -1,0 +1,44 @@
+# Publishing new code from a single archive: upload `upload/code.tar.gz` through the GitHub
+# website ("Add file → Upload files"). This unpacks it into the repository, commits it in the
+# name of whoever uploaded it, and starts the installer build when the version is new.
+name: Update code from archive
+
+on:
+  push:
+    branches: [main]
+    paths: ["upload/code.tar.gz"]
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  unpack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unpack the archive over the repository
+        run: |
+          cp upload/code.tar.gz "$RUNNER_TEMP/code.tar.gz"
+          # start from an empty tree (workflows and LICENSE excepted) so files removed in the new code go away too
+          git ls-files -z | grep -zv -e '^\.github/' -e '^LICENSE$' | xargs -0 -r git rm -q
+          rm -rf upload
+          tar -xzf "$RUNNER_TEMP/code.tar.gz" -C .
+      - name: Commit
+        run: |
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+          v=$(sed -n 's/__version__ = "\(.*\)"/\1/p' config/version.py)
+          git add -A
+          git commit -q -m "QualResearcher $v" || echo "nothing changed"
+          git push
+          echo "VERSION=$v" >> "$GITHUB_ENV"
+      - name: Build the installer if this version is new
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "v$VERSION" >/dev/null 2>&1; then
+            echo "v$VERSION already has a release. Raise the number in config/version.py to publish a new one."
+          else
+            gh workflow run release.yml --ref main
+          fi

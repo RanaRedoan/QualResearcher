@@ -1,0 +1,81 @@
+# Builds the Windows installer and publishes it on the Releases page.
+# Runs by itself after new code arrives (see update-from-archive.yml), when a v* tag is
+# pushed, or by hand: Actions → "Build Windows installer" → Run workflow.
+name: Build Windows installer
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
+      - run: pip install -r requirements.txt waitress
+      - run: python -m pytest
+
+  windows:
+    needs: test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Read version
+        id: v
+        shell: pwsh
+        run: |
+          $v = (Select-String -Path config/version.py -Pattern '__version__ = "(.+)"').Matches[0].Groups[1].Value
+          "version=$v" >> $env:GITHUB_OUTPUT
+          Write-Host "Building version $v"
+
+      - name: Install Python packages
+        run: pip install -r requirements-desktop.txt pyinstaller
+
+      - name: Download ffmpeg (essentials build from gyan.dev)
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force build/ffmpeg | Out-Null
+          Invoke-WebRequest https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip -OutFile build/ffmpeg.zip
+          Expand-Archive build/ffmpeg.zip -DestinationPath build/ffmpeg-src
+          Get-ChildItem build/ffmpeg-src -Recurse -Include ffmpeg.exe,ffprobe.exe | Copy-Item -Destination build/ffmpeg
+          Get-ChildItem build/ffmpeg
+
+      - name: Build the app with PyInstaller
+        run: pyinstaller --noconfirm packaging/QualResearcher.spec
+
+      - name: Self-test the built app
+        shell: pwsh
+        run: |
+          $env:KOTHON_DATA_DIR = "$env:RUNNER_TEMP\qr-selftest"
+          $p = Start-Process dist\QualResearcher\QualResearcher.exe -ArgumentList "--selftest" -Wait -PassThru
+          Get-Content "$env:KOTHON_DATA_DIR\logs\app.log" -ErrorAction SilentlyContinue | Select-Object -Last 40
+          if ($p.ExitCode -ne 0) { throw "Self-test failed with exit code $($p.ExitCode)" }
+
+      - name: Build the installer with Inno Setup
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress; }
+          & $iscc "/DAppVersion=${{ steps.v.outputs.version }}" packaging\installer.iss
+          Get-ChildItem Output
+
+      - name: Publish the release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.v.outputs.version }}
+          name: QualResearcher ${{ steps.v.outputs.version }}
+          body_path: docs/RELEASE_NOTES.md
+          make_latest: true
+          files: Output/QualResearcher-Setup-${{ steps.v.outputs.version }}.exe

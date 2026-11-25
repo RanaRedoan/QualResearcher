@@ -28,6 +28,10 @@ Recordings and transcripts stay on your computer, in `%LOCALAPPDATA%\QualResearc
 
 Run from source, build the installer and publish a release: see [docs/DEVELOPING.md](docs/DEVELOPING.md).
 
+## License
+
+MIT, see [LICENSE](LICENSE). Bundled third-party software: [docs/THIRD_PARTY.md](docs/THIRD_PARTY.md).
+
 ---
 
 Developed by [Rana Redoan](https://github.com/RanaRedoan) · redoanhossain630@gmail.com

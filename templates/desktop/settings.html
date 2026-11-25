@@ -7,7 +7,7 @@
   <section class="set-group">
     <h2>Gemini API keys</h2>
     <p class="small muted">Give each key a name. You choose which key to use for each recording on the New transcription screen; the default key is picked unless you change it.
-      <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Open AI Studio</a></p>
+      <a href="{% url 'desktop_help_key' %}">How to get a key</a> · <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Open AI Studio</a></p>
     <div class="key-table">
       {% for k in keys %}
       <div class="key-line">

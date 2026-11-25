@@ -420,3 +420,31 @@ select.key-select { padding: .24rem .5rem; border: 1px solid var(--line-2); bord
 .credit a:hover { color: var(--accent); text-decoration-color: var(--accent); }
 .statusbar .credit { color: var(--ink-3); }
 .bare-credit { margin-top: 2.2rem; padding-top: .9rem; border-top: 1px solid var(--line); font-size: .76rem; color: var(--ink-3); }
+
+/* in-app guide: how to get a Gemini key */
+.guide { max-width: 680px; font-family: var(--bn); }
+.guide h1 { font-family: var(--serif), var(--bn); font-size: 1.6rem; margin-top: .6rem; }
+.guide h2 { font-family: var(--bn); font-size: 1rem; font-weight: 700; margin: 0 0 .3rem; }
+.guide p, .guide li, .guide dd { font-size: .95rem; line-height: 1.75; }
+.guide-back { font-size: .82rem; }
+.guide-lead { color: var(--ink-2); }
+.guide-note { margin-top: .5rem; }
+.guide-steps { list-style: none; counter-reset: step; padding: 0; margin: 1.6rem 0; }
+.guide-steps > li { counter-increment: step; position: relative; padding: 0 0 1.3rem 2.9rem; margin: 0; }
+.guide-steps > li::before { content: counter(step); position: absolute; left: 0; top: 0; width: 1.9rem; height: 1.9rem; border-radius: 50%; background: var(--accent); color: #fff; font-family: var(--serif); font-weight: 600; display: grid; place-items: center; font-size: .95rem; }
+.guide-steps > li:not(:last-child)::after { content: ""; position: absolute; left: .93rem; top: 2.2rem; bottom: .3rem; width: 1px; background: var(--line-2); }
+.guide-steps p { margin: 0 0 .5rem; color: var(--ink-2); }
+.key-sample { display: inline-flex; align-items: center; gap: 0; margin: .2rem 0 .4rem; padding: .35rem .4rem .35rem .7rem; border: 1px solid var(--line-2); border-radius: var(--radius); background: #fff; font-family: ui-monospace, Consolas, monospace; font-size: .8rem; color: var(--ink-3); }
+.key-sample span:first-child { color: var(--ink); }
+.key-sample .kc { margin-left: .8rem; padding: .1rem .55rem; border-radius: 4px; background: var(--accent-soft); color: var(--accent); font-family: var(--font); font-weight: 600; }
+.guide code, .guide kbd { font-family: ui-monospace, Consolas, monospace; font-size: .82rem; background: #eef2ef; padding: .05rem .3rem; border-radius: 3px; }
+.ok-text { color: var(--accent); font-weight: 600; }
+.guide-box { border: 1px solid var(--line); border-radius: var(--radius); background: #fff; padding: 1rem 1.2rem .4rem; margin-bottom: 1rem; }
+.guide-box.important { border-color: #eedfb0; background: var(--warn-soft); }
+.guide-box ul { padding-left: 1.2rem; margin: 0 0 .7rem; }
+.guide-faq dt { font-weight: 600; font-size: .9rem; margin-top: .6rem; }
+.guide-faq dd { margin: .1rem 0 .3rem; color: var(--ink-2); }
+.key-help { display: flex; align-items: center; gap: .7rem; padding: .7rem .9rem; border: 1px solid #d6e8dc; background: var(--accent-soft); border-radius: var(--radius); margin: 0 0 1.1rem; font-family: var(--bn); font-size: .92rem; color: var(--ink); }
+.key-help:hover { text-decoration: none; border-color: var(--accent); color: var(--ink); }
+.key-help strong { color: var(--accent); }
+.key-help .arrow { margin-left: auto; color: var(--accent); }

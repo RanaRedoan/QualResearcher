@@ -12,5 +12,6 @@ urlpatterns = [
     path("reveal/", views.reveal, name="desktop_reveal"),
     path("jobs.json", views.jobs_json, name="desktop_jobs"),
     path("update-check/", views.update_check, name="desktop_update"),
+    path("help/gemini-key/", views.help_gemini_key, name="desktop_help_key"),
     path("ping/", views.ping, name="desktop_ping"),
 ]

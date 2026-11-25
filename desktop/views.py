@@ -287,5 +287,12 @@ def update_check(request):
     return JsonResponse(_update_cache["result"])
 
 
+@_desktop_only
+def help_gemini_key(request):
+    """Step-by-step guide to getting a Gemini key; open even before a key is saved."""
+    layout = "layouts/app.html" if store.api_key() else "layouts/bare.html"
+    return render(request, "desktop/help_gemini_key.html", {"layout": layout})
+
+
 def ping(request):
     return JsonResponse({"ok": True, "version": settings.APP_VERSION})

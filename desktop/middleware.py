@@ -25,7 +25,7 @@ def local_user():
 
 
 class DesktopMiddleware:
-    OPEN_PREFIXES = ("/static/", "/desktop/setup/", "/desktop/test-key/", "/desktop/ping/")
+    OPEN_PREFIXES = ("/static/", "/desktop/setup/", "/desktop/test-key/", "/desktop/ping/", "/desktop/help/")
 
     def __init__(self, get_response):
         self.get_response = get_response

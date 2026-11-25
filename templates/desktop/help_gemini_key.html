@@ -1,0 +1,76 @@
+{% extends layout %}
+{% block title %}Gemini API key কীভাবে পাবেন — {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="guide">
+  <div class="guide-back">
+    {% if KEY_SET %}<a href="{% url 'desktop_settings' %}">← Settings</a>{% else %}<a href="{% url 'desktop_setup' %}">← key দেওয়ার পেজে ফিরে যান</a>{% endif %}
+  </div>
+
+  <h1>Gemini API key কীভাবে পাবেন</h1>
+  <p class="guide-lead">{{ SITE_NAME }} ট্রান্সক্রিপ্ট বানাতে Google-এর Gemini ব্যবহার করে। এর জন্য আপনার নিজের একটা <strong>API key</strong> লাগবে, মানে একটা লম্বা গোপন কোড, যা দেখে Google বোঝে কাজটা কার অ্যাকাউন্টে হচ্ছে। লাগবে একটা Gmail/Google অ্যাকাউন্ট, আর মোটামুটি ৫ মিনিট।</p>
+
+  <a class="btn lg" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio খুলুন ↗</a>
+  <p class="small faint guide-note">বোতাম চাপলে আপনার ব্রাউজারে পেজটা খুলবে। এই গাইডটা এখানে খোলা থাকবে, তাই দুটো পাশাপাশি রেখে কাজ করতে পারেন।</p>
+
+  <ol class="guide-steps">
+    <li>
+      <h2>Sign in করুন</h2>
+      <p>যে Google অ্যাকাউন্টে key রাখতে চান, সেটা দিয়ে Sign in করুন। প্রথমবার হলে Google-এর শর্তের একটা বার্তা আসবে। পড়ে টিক দিয়ে <strong>Continue</strong> চাপুন।</p>
+    </li>
+    <li>
+      <h2>API key তৈরি করুন</h2>
+      <p><strong>API keys</strong> পেজে একটা key আগে থেকেই থাকতে পারে, কারণ নতুন ব্যবহারকারীর জন্য Google নিজেই একটা বানিয়ে দেয়। থাকলে সেটাই ব্যবহার করুন।</p>
+      <p>না থাকলে <strong>Create API key</strong> বোতাম চাপুন। কোন প্রজেক্টে বানাবেন জিজ্ঞেস করলে তালিকা থেকে যেকোনো একটা বেছে নিন, অথবা নতুন একটা বানান।</p>
+    </li>
+    <li>
+      <h2>key কপি করুন</h2>
+      <p>key-র পাশের <strong>Copy</strong> বোতাম চাপুন। হাতে সিলেক্ট করে কপি না করাই ভালো, তাতে অনেক সময় key-র শুরু বা শেষ বাদ পড়ে যায়।</p>
+      <div class="key-sample" aria-hidden="true"><span>AIza</span>Sy•••••••••••••••••••••••••••••<span class="kc">Copy</span></div>
+      <p class="small faint">key দেখতে মোটামুটি এরকম: লম্বা, ফাঁকা জায়গা ছাড়া, সাধারণত <code>AQ.</code> বা <code>AIza</code> দিয়ে শুরু।</p>
+    </li>
+    <li>
+      <h2>{{ SITE_NAME }}-এ বসান</h2>
+      <p>{% if KEY_SET %}<a href="{% url 'desktop_settings' %}">Settings → Gemini API keys → Add another key</a>{% else %}<a href="{% url 'desktop_setup' %}">key দেওয়ার পেজে</a>{% endif %} ফিরে গিয়ে <strong>Gemini API key</strong> ঘরে পেস্ট করুন (<kbd>Ctrl</kbd> + <kbd>V</kbd>)। তারপর <strong>Test key</strong> চাপুন।</p>
+      <p>সবুজ লেখায় <span class="ok-text">“The key works.”</span> দেখালে হয়ে গেল। key-র একটা নাম দিন (যেমন যে Gmail দিয়ে বানিয়েছেন), তারপর Save।</p>
+    </li>
+  </ol>
+
+  <section class="guide-box important">
+    <h2>আসল ইন্টারভিউয়ের আগে billing চালু করুন</h2>
+    <p>নতুন key প্রথমে <strong>Free tier</strong>-এ থাকে। এতে দুটো সমস্যা আছে:</p>
+    <ul>
+      <li>দিনে অল্প কাজ করা যায়। এক-দুটো লম্বা অডিওতেই limit শেষ হয়ে যেতে পারে।</li>
+      <li>Free tier-এ যা পাঠানো হয়, Google তা তাদের প্রোডাক্ট উন্নত করতে ব্যবহার করতে পারে। অংশগ্রহণকারীদের অডিওর জন্য এটা ঠিক নয়।</li>
+    </ul>
+    <p><strong>কীভাবে চালু করবেন:</strong> AI Studio-র API keys পেজে আপনার প্রজেক্টের পাশে <strong>Set up billing</strong> চাপুন। একটা billing account বানিয়ে পেমেন্ট মাধ্যম (যেমন কার্ড) যোগ করুন। Google শুরুতে কিছু টাকা (বর্তমানে কমপক্ষে ৫ ডলার) আগাম জমা নেয়, যা পরে ব্যবহারের সাথে কাটা যায়। চালু হলে প্রজেক্টের পাশে <strong>Free</strong>-এর বদলে paid tier দেখাবে।</p>
+    <p class="small muted">খরচ দেখা যায় AI Studio-র <strong>Dashboard → Usage</strong>-এ। Google Cloud-এর <strong>Billing → Budgets &amp; alerts</strong>-এ একটা বাজেট ঠিক করে রাখলে খরচ সেই সীমায় পৌঁছালে ইমেইল পাবেন।</p>
+  </section>
+
+  <section class="guide-box">
+    <h2>key নিরাপদ রাখুন</h2>
+    <ul>
+      <li>key কাউকে দেবেন না, কোথাও পোস্ট করবেন না। যার কাছে key থাকবে, সে আপনার খরচে Gemini চালাতে পারবে।</li>
+      <li>টিমের প্রত্যেকে নিজের key ব্যবহার করুন।</li>
+      <li>key ফাঁস হয়ে গেলে AI Studio থেকে সেটা Delete করে নতুন key বানান, তারপর এখানে Settings-এ নতুনটা দিন।</li>
+    </ul>
+  </section>
+
+  <section class="guide-box">
+    <h2>সমস্যা হলে</h2>
+    <dl class="guide-faq">
+      <dt>“Google says this key is not valid”</dt>
+      <dd>key পুরোটা আসেনি। AI Studio থেকে <strong>Copy</strong> বোতাম দিয়ে আবার কপি করুন।</dd>
+      <dt>“That does not look like a whole Gemini API key”</dt>
+      <dd>পেস্ট করার সময় ফাঁকা জায়গা বা অর্ধেক key চলে এসেছে। ঘর খালি করে আবার পেস্ট করুন।</dd>
+      <dt>“The key works, but its limit is used up for now”</dt>
+      <dd>key ঠিক আছে, শুধু ওই সময়ের limit শেষ। পরে আবার চেষ্টা করুন, অথবা billing চালু করুন।</dd>
+      <dt>“Could not reach Google”</dt>
+      <dd>ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।</dd>
+      <dt>Create API key চাপলে কিছু হয় না, বা অনুমতির বার্তা আসে</dt>
+      <dd>অফিসের (Workspace) অ্যাকাউন্টে অনেক সময় এটা বন্ধ থাকে। ব্যক্তিগত Gmail দিয়ে চেষ্টা করুন, বা আপনার অফিসের IT-কে জিজ্ঞেস করুন।</dd>
+    </dl>
+  </section>
+
+  <p class="small faint">Google-এর নিজের নির্দেশনা: <a href="https://ai.google.dev/gemini-api/docs/api-key" target="_blank" rel="noopener">API keys</a> · <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener">Billing</a>. Google মাঝে মাঝে পেজের চেহারা বদলায়, তাই বোতামের নাম একটু আলাদা হতে পারে।</p>
+</div>
+{% endblock %}

@@ -216,3 +216,16 @@ def test_website_mode_is_unchanged(client, settings):
     settings.DESKTOP = False
     page = client.get(reverse("login")).content.decode()
     assert 'class="app"' not in page and "site-header" in page
+
+
+def test_key_guide_opens_before_and_after_setup(client, desktop):
+    setup = client.get(reverse("desktop_setup")).content.decode()
+    assert reverse("desktop_help_key") in setup
+    page = client.get(reverse("desktop_help_key"))
+    assert page.status_code == 200  # reachable even though no key is saved yet
+    text = page.content.decode()
+    assert "Gemini API key কীভাবে পাবেন" in text and "aistudio.google.com/apikey" in text
+    assert "billing" in text and 'class="app"' not in text
+    store.add_key("redoan630", KEY)
+    text = client.get(reverse("desktop_help_key")).content.decode()
+    assert 'class="app"' in text and "Help: Gemini key" in text

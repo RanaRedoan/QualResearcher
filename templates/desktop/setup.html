@@ -5,6 +5,10 @@
   <h1>Welcome</h1>
   <p class="muted">{{ SITE_NAME }} turns Bangla interview recordings into verbatim transcripts using Google Gemini. It needs your own Gemini API key once. The key stays on this computer.</p>
 
+  <a class="key-help" href="{% url 'desktop_help_key' %}">
+    <span><strong>Gemini API key নেই?</strong> কীভাবে পাবেন, ধাপে ধাপে বাংলায় দেখুন</span><span class="arrow">→</span>
+  </a>
+
   <ol class="setup-steps">
     <li>Open <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio → API keys</a> and sign in with your Google account.</li>
     <li>Click <strong>Create API key</strong> (or use the key that is already listed), then <strong>Copy</strong>.</li>
@@ -26,6 +30,6 @@
     <div class="notice warning small">For real interviews use a key whose project has <strong>billing set up</strong> (paid tier). On the free tier Google may use what you send to improve its products, which is not acceptable for participant audio.</div>
     <button class="btn lg" type="submit" style="width:100%">Save and continue</button>
   </form>
-  <p class="small faint">Need help? Read the step-by-step guide {% if GITHUB_REPO %}<a href="https://github.com/{{ GITHUB_REPO }}/blob/main/docs/GEMINI_API_KEY.md" target="_blank" rel="noopener">How to get a Gemini API key</a>{% else %}“How to get a Gemini API key”{% endif %}.</p>
+  <p class="small faint">Stuck? <a href="{% url 'desktop_help_key' %}">How to get a Gemini API key</a> (in Bangla, step by step).</p>
 </div>
 {% endblock %}

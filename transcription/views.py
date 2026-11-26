@@ -138,6 +138,8 @@ def job_detail(request, public_id):
         ctx["gemini_keys"] = store.keys()
         ctx["job_key_name"] = store.key_name(job.gemini_key_id)
         ctx["job_key_id"] = (store.get_key(job.gemini_key_id) or {}).get("id", "")
+        ctx["export_names"] = {k.replace("-", "_"): export_filename(job, k)
+                               for k in ("docx", "docx-ts", "docx-table", "partial")}
     return render(request, "transcription/job_detail.html", ctx)
 
 
@@ -196,9 +198,23 @@ def _docx_response(buf, filename):
     )
 
 
+DOCX_KINDS = {"docx": ("clean", ""), "docx-ts": ("timestamps", "-timestamps"),
+              "docx-table": ("table", "-side-by-side")}
+
+
+def export_filename(job, kind):
+    base = slugify(job.title, allow_unicode=True)[:80] or f"transcript-{job.pk}"
+    if kind == "partial":
+        return f"{base}-partial-{job.covered_display.replace(':', '-')}.docx"
+    suffix = DOCX_KINDS.get(kind, ("", ""))[1]
+    if kind == "docx-table" and not job.has_english:
+        suffix = ""
+    return f"{base}{suffix}.docx"
+
+
 def export_file(job, kind):
     """(BytesIO, filename) for a Word export of `job`, or None if that kind is not available yet."""
-    base = slugify(job.title, allow_unicode=True)[:80] or f"transcript-{job.pk}"
+    filename = export_filename(job, kind)
     if kind == "partial":
         # whatever is transcribed so far — so a stopped job is still useful
         segs = job.available_segments()
@@ -207,18 +223,13 @@ def export_file(job, kind):
         note = (f"Incomplete: covers about 0:00 to {job.covered_display} of {job.duration_display}. "
                 f"The rest has not been transcribed yet.")
         job.segments = [dict(s, en="") for s in segs]  # in memory only, not saved
-        return (report.build_docx(job, "clean", partial_note=note),
-                f"{base}-partial-{job.covered_display.replace(':', '-')}.docx")
-    if job.status != Job.Status.DONE:
+        return report.build_docx(job, "clean", partial_note=note), filename
+    if job.status != Job.Status.DONE or kind not in DOCX_KINDS:
         return None
-    docx_kinds = {"docx": ("clean", ""), "docx-ts": ("timestamps", "-timestamps"),
-                  "docx-table": ("table", "-side-by-side")}
-    if kind not in docx_kinds:
-        return None
-    layout, suffix = docx_kinds[kind]
+    layout = DOCX_KINDS[kind][0]
     if layout == "table" and not job.has_english:
-        layout, suffix = "clean", ""
-    return report.build_docx(job, layout), f"{base}{suffix}.docx"
+        layout = "clean"
+    return report.build_docx(job, layout), filename
 
 
 @login_required

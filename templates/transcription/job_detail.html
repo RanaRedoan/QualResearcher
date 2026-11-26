@@ -11,17 +11,17 @@
     </div>
     {% if job.status == "done" %}
     <div class="downloads">
-      {% if DESKTOP %}{% include "transcription/_export.html" with kind="docx" label="Save as Word" cls="" title="Saves the file and opens it in Word" %}
+      {% if DESKTOP %}{% include "transcription/_export.html" with kind="docx" label="Save as Word…" cls="" title="Choose where to save, then it opens in Word" save_name=export_names.docx %}
       {% else %}{% include "transcription/_export.html" with kind="docx" label="Word" cls="" %}{% endif %}
-      {% include "transcription/_export.html" with kind="docx-ts" label="With timestamps" cls="secondary" %}
-      {% if job.has_english %}{% include "transcription/_export.html" with kind="docx-table" label="Side by side" cls="secondary" %}{% endif %}
+      {% include "transcription/_export.html" with kind="docx-ts" label="With timestamps…" cls="secondary" save_name=export_names.docx_ts %}
+      {% if job.has_english %}{% include "transcription/_export.html" with kind="docx-table" label="Side by side…" cls="secondary" save_name=export_names.docx_table %}{% endif %}
     </div>
     {% endif %}
   </div>
 
   {% if DESKTOP %}{% with le=request.session.last_export %}{% if le and le.job == job.public_id|stringformat:"s" %}
     <div class="notice success saved-bar">
-      <span>Saved <strong>{{ le.name }}</strong> in {{ EXPORT_DIR }}</span>
+      <span>Saved <strong>{{ le.name }}</strong> in <span class="path">{{ le.folder|default:EXPORT_DIR }}</span></span>
       <form method="post" action="{% url 'desktop_reveal' %}" class="inline-form">{% csrf_token %}
         <input type="hidden" name="next" value="{{ request.get_full_path }}">
         <button class="btn secondary sm" name="what" value="open" type="submit">Open</button>
@@ -37,7 +37,7 @@
         <div class="small">The app was closed or the PC restarted while this was running. {% if job.has_audio %}Nothing done so far is lost.{% else %}The audio has already been deleted, so please upload it again to finish.{% endif %}</div>
       </div>
       <div class="downloads">
-        {% if job.has_partial %}{% include "transcription/_export.html" with kind="partial" label="Word, what is done so far" cls="secondary sm" %}{% endif %}
+        {% if job.has_partial %}{% include "transcription/_export.html" with kind="partial" label="Word, what is done so far" cls="secondary sm" save_name=export_names.partial %}{% endif %}
         {% if job.has_audio %}<form method="post" action="{% url 'job_resume' job.public_id %}" class="inline-form">{% csrf_token %}{% include "transcription/_key_select.html" %}<button class="btn sm" type="submit">Continue from {{ job.covered_display }}</button></form>{% endif %}
       </div>
     </div>
@@ -51,7 +51,7 @@
       <p class="small muted" id="status-note" style="margin:.8rem 0 0">{{ job.progress_note|default:"Waiting to start" }}</p>
       <div class="progress-foot">
         <span>Transcribed up to <strong id="covered">{{ job.covered_display }}</strong> of {{ job.duration_display }}. {% if DESKTOP %}You can look at other transcripts meanwhile. Keep {{ SITE_NAME }} open until this finishes.{% else %}You can close this page; work continues while the black start window stays open.{% endif %}</span>
-        <span id="partial-btn" {% if not job.has_partial %}hidden{% endif %}>{% include "transcription/_export.html" with kind="partial" label="Word, what is done so far" cls="secondary sm" %}</span>
+        <span id="partial-btn" {% if not job.has_partial %}hidden{% endif %}>{% include "transcription/_export.html" with kind="partial" label="Word, what is done so far" cls="secondary sm" save_name=export_names.partial %}</span>
       </div>
     </div>
   {% elif job.status == "failed" %}
@@ -61,13 +61,14 @@
         <div class="small" style="margin-top:.2rem">{{ job.error|truncatechars:300 }}</div>
       </div>
       <div class="downloads">
-        {% if job.has_partial %}{% include "transcription/_export.html" with kind="partial" label="Word, what is done so far" cls="secondary sm" %}{% endif %}
+        {% if job.has_partial %}{% include "transcription/_export.html" with kind="partial" label="Word, what is done so far" cls="secondary sm" save_name=export_names.partial %}{% endif %}
         {% if job.has_audio %}<form method="post" action="{% url 'job_resume' job.public_id %}" class="inline-form">{% csrf_token %}{% include "transcription/_key_select.html" %}<button class="btn sm" type="submit">{% if job.has_partial %}Continue from {{ job.covered_display }}{% else %}Try again{% endif %}</button></form>{% endif %}
       </div>
     </div>
   {% endif %}
 
   {% if job.status != "done" %}
+    {% if DESKTOP %}{% include "transcription/_ai_note.html" with live=True %}{% endif %}
     <section class="panel" id="live-wrap" {% if not job.has_partial %}hidden{% endif %}>
       <div class="panel-head">
         <h2>{% if job.is_finished or job.stalled %}Transcribed so far{% else %}<span class="live-dot"></span>Live transcript{% endif %}
@@ -97,6 +98,7 @@
     {% if job.error %}<div class="notice warning small">{{ job.error }}</div>{% endif %}
     {% if job.uncertain_count %}<div class="notice warning small">{{ job.uncertain_count }} passage{{ job.uncertain_count|pluralize }} {{ job.uncertain_count|pluralize:"was,were" }} hard to hear (underlined in yellow). Please check against the audio.</div>{% endif %}
 
+    {% include "transcription/_ai_note.html" %}
     <section class="panel" id="done-panel">
       <div class="panel-head">
         <h2>Transcript <span class="sub">{{ job.segments|length }} turn{{ job.segments|length|pluralize }} · {{ job.duration_display }}</span></h2>
@@ -123,7 +125,7 @@
           {% endfor %}
         </div>
       </div>
-      <div class="panel-foot"><span>Scroll inside the box to read the whole transcript.</span><span class="faint">{% if DESKTOP %}Use “Save as Word” above to keep it.{% else %}Download the Word file above to keep it.{% endif %}</span></div>
+      <div class="panel-foot"><span>Scroll inside the box to read the whole transcript.</span><span class="faint">{% if DESKTOP %}“Save as Word…” asks where to save it.{% else %}Download the Word file above to keep it.{% endif %}</span></div>
     </section>
   {% endif %}
 

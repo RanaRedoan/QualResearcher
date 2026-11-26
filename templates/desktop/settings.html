@@ -52,7 +52,7 @@
       <div class="field">
         <label for="id_export_dir">Save Word files in this folder</label>
         <input type="text" name="export_dir" id="id_export_dir" value="{% if cfg.export_dir %}{{ cfg.export_dir }}{% else %}{{ default_export }}{% endif %}">
-        <div class="help">“Save as Word” puts files here and opens them in Word.</div>
+        <div class="help">“Save as Word…” opens a Save box in this folder. The folder you pick there is remembered here.</div>
       </div>
     </section>
 
@@ -70,7 +70,9 @@
 
   <section class="set-group">
     <h2>About</h2>
-    <p class="small muted">{{ SITE_NAME }} version {{ APP_VERSION }}. {% include "_credit.html" %}.
+    <p class="small muted">{{ SITE_NAME }} version {{ APP_VERSION }} (beta). {% include "_credit.html" %}.</p>
+    <p class="small muted">This is a beta version: transcripts are made by AI and must be checked by a person. If something does not work or looks wrong, <a href="{{ REPORT_MAILTO }}" target="_blank" rel="noopener">email the developer</a> ({{ DEVELOPER_EMAIL }}) and attach the log file from the app's data folder if you can.</p>
+    <p class="small muted">
       {% if GITHUB_REPO %}<a href="https://github.com/{{ GITHUB_REPO }}/releases/latest" target="_blank" rel="noopener">Check for a newer version</a>.{% endif %}</p>
     <form method="post" action="{% url 'desktop_reveal' %}" class="inline-form">{% csrf_token %}
       <input type="hidden" name="what" value="data"><input type="hidden" name="next" value="{{ request.get_full_path }}">

@@ -1,0 +1,16 @@
+<div class="np-head"><strong>Notifications</strong></div>
+<div class="np-list">
+  {% for n in items %}
+  <a class="np-item {{ n.kind }}{% if not n.read_at %} unread{% endif %}" href="{{ n.url|default:'#' }}">
+    <span class="np-dot"></span>
+    <span class="np-text">
+      <span class="np-title">{{ n.title }}</span>
+      {% if n.body %}<span class="np-body">{{ n.body }}</span>{% endif %}
+      <span class="np-time">{{ n.created_at|timesince }} ago</span>
+    </span>
+  </a>
+  {% empty %}
+  <p class="np-empty">Nothing yet. You'll see a note here when a transcript is ready.</p>
+  {% endfor %}
+</div>
+<div class="np-foot">Beta version. Found a problem? <a href="{{ REPORT_MAILTO }}" target="_blank" rel="noopener">Email the developer</a> · {{ DEVELOPER_EMAIL }}</div>

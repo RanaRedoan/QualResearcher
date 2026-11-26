@@ -448,3 +448,42 @@ select.key-select { padding: .24rem .5rem; border: 1px solid var(--line-2); bord
 .key-help:hover { text-decoration: none; border-color: var(--accent); color: var(--ink); }
 .key-help strong { color: var(--accent); }
 .key-help .arrow { margin-left: auto; color: var(--accent); }
+
+/* bell + notifications */
+.side-brand { position: relative; }
+.bell { margin-left: auto; position: relative; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 6px; border: 0; background: none; color: var(--ink-2); cursor: pointer; }
+.bell svg { width: 16px; height: 16px; }
+.bell:hover, .bell[aria-expanded="true"] { background: #e3e9e5; color: var(--ink); }
+.bell-count { position: absolute; top: 1px; right: 0; min-width: 15px; height: 15px; padding: 0 4px; border-radius: 99px; background: var(--bad); color: #fff; font-family: var(--font); font-size: .62rem; font-weight: 700; line-height: 15px; text-align: center; }
+.notif-panel { position: fixed; left: 12px; top: 48px; z-index: 50; width: 360px; max-height: min(560px, 75vh); display: flex; flex-direction: column; background: #fff; border: 1px solid var(--line-2); border-radius: 8px; box-shadow: 0 12px 32px rgba(20, 32, 26, .16); overflow: hidden; }
+.np-head { padding: .6rem .9rem; border-bottom: 1px solid var(--line); font-size: .84rem; }
+.np-list { overflow-y: auto; flex: 1; }
+.np-item { display: flex; gap: .6rem; padding: .65rem .9rem; border-bottom: 1px solid #f0f3f1; color: var(--ink); }
+.np-item:hover { background: #f6f9f7; text-decoration: none; color: var(--ink); }
+.np-item.unread { background: var(--accent-soft); }
+.np-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; margin-top: .38rem; background: var(--ink-3); }
+.np-item.done .np-dot, .np-item.update .np-dot { background: var(--accent); }
+.np-item.failed .np-dot { background: var(--bad); }
+.np-text { display: flex; flex-direction: column; gap: .1rem; min-width: 0; }
+.np-title { font-weight: 600; font-size: .82rem; }
+.np-body { font-size: .78rem; color: var(--ink-2); line-height: 1.45; }
+.np-time { font-size: .7rem; color: var(--ink-3); }
+.np-empty { padding: 1rem .9rem; font-size: .8rem; color: var(--ink-3); margin: 0; }
+.np-foot { padding: .55rem .9rem; border-top: 1px solid var(--line); background: var(--warn-soft); font-size: .74rem; color: var(--ink-2); }
+
+.toast { position: fixed; right: 16px; bottom: 36px; z-index: 60; width: 340px; display: flex; flex-direction: column; gap: .2rem; padding: .75rem .95rem .8rem 1.05rem; background: #fff; border: 1px solid var(--line-2); border-left: 3px solid var(--ink-3); border-radius: 8px; box-shadow: 0 12px 32px rgba(20, 32, 26, .18); cursor: pointer; font-size: .8rem; color: var(--ink-2); }
+.toast.done, .toast.update { border-left-color: var(--accent); }
+.toast.failed { border-left-color: var(--bad); }
+.toast strong { color: var(--ink); font-size: .85rem; }
+@media (prefers-reduced-motion: no-preference) { .toast:not([hidden]) { animation: toast-in .25s ease-out; } }
+@keyframes toast-in { from { transform: translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* beta + reminders */
+.sb-beta { background: var(--warn); color: #fff; font-weight: 700; padding: 0 .45rem; border-radius: 3px; font-size: .64rem; letter-spacing: .02em; }
+.sb-report { color: var(--ink-2); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 2px; }
+.sb-report:hover { color: var(--accent); }
+.beta-tag { display: inline-block; vertical-align: middle; font-family: var(--font); font-size: .7rem; font-weight: 700; background: var(--warn); color: #fff; padding: .05rem .45rem; border-radius: 4px; margin-left: .3rem; }
+.ai-note { display: flex; gap: .55rem; align-items: flex-start; margin: 0 0 .7rem; padding: .5rem .8rem; border: 1px solid #eedfb0; background: var(--warn-soft); border-radius: var(--radius); font-size: .8rem; color: #5c4a14; line-height: 1.5; }
+.ai-note svg { flex: none; width: 15px; height: 15px; margin-top: .12rem; color: var(--warn); }
+.ai-note strong { color: #4a3a0c; }
+.saved-bar .path { font-family: ui-monospace, Consolas, monospace; font-size: .76rem; word-break: break-all; }

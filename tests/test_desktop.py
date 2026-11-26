@@ -229,3 +229,89 @@ def test_key_guide_opens_before_and_after_setup(client, desktop):
     store.add_key("redoan630", KEY)
     text = client.get(reverse("desktop_help_key")).content.decode()
     assert 'class="app"' in text and "Help: Gemini key" in text
+
+
+# ---------------------------------------------------------------- 1.0.2: Save As, notifications, beta
+def test_save_as_chosen_path_and_folder_is_remembered(client, with_key, tmp_path, settings):
+    client.get(reverse("dashboard"))
+    from desktop.middleware import local_user
+    job = _done_job(local_user())
+    page = client.get(job.get_absolute_url()).content.decode()
+    assert 'data-save-name="idi-07-garment-worker.docx"' in page
+    assert 'data-save-name="idi-07-garment-worker-timestamps.docx"' in page
+    assert "Made with AI: check it before you use it." in page
+
+    chosen = tmp_path / "Study A" / "IDI-07 final.docx"
+    chosen.parent.mkdir()
+    client.post(reverse("desktop_save", args=[job.public_id, "docx"]), {"target_path": str(chosen)})
+    assert chosen.exists() and store.export_dir() == chosen.parent
+    page = client.get(job.get_absolute_url()).content.decode()
+    assert "IDI-07 final.docx" in page and str(chosen.parent) in page
+    # nonsense paths are refused
+    client.post(reverse("desktop_save", args=[job.public_id, "docx"]), {"target_path": "relative/x.docx"})
+    client.post(reverse("desktop_save", args=[job.public_id, "docx"]), {"target_path": str(tmp_path / "nope" / "x.docx")})
+    assert not (tmp_path / "nope").exists()
+
+
+def test_finished_job_notifies_and_asks_for_manual_check(client, with_key, tone_file, fake_gemini, sync_runner,
+                                                         django_capture_on_commit_callbacks):
+    from desktop.models import Notification
+    from tests.test_app import upload_payload
+
+    with django_capture_on_commit_callbacks(execute=True):
+        client.post(reverse("upload"), upload_payload(tone_file))
+    note = Notification.objects.get(kind="done")
+    assert "IDI-01 Garment worker" in note.title and "check it against the audio" in note.body
+    data = client.get(reverse("desktop_jobs")).json()
+    assert data["unread"] == 1 and data["latest"]["title"] == note.title
+
+    page = client.get(reverse("dashboard")).content.decode()
+    assert 'id="bell"' in page and "Beta" in page and "Report a problem" in page and "mailto:redoanhossain630@gmail.com" in page
+    panel = client.get(reverse("desktop_notifications")).content.decode()
+    assert note.title in panel and "Email the developer" in panel
+    client.post(reverse("desktop_notifications_read"))
+    assert client.get(reverse("desktop_jobs")).json()["unread"] == 0
+
+
+def test_app_start_welcomes_once_and_reports_cut_off_jobs(with_key):
+    from desktop.middleware import local_user
+    from desktop.models import Notification
+    from desktop.notify import on_app_start
+
+    Job.objects.create(user=local_user(), title="IDI-09", status="processing", progress=40,
+                       duration_seconds=600, consent_confirmed=True)
+    on_app_start()
+    on_app_start()  # opening the app twice does not repeat anything
+    assert Notification.objects.filter(dedupe_key="welcome-beta").count() == 1
+    stopped = Notification.objects.filter(kind="failed")
+    assert stopped.count() == 1 and "IDI-09" in stopped[0].title and "Continue" in stopped[0].body
+
+
+def test_update_found_becomes_a_notification(client, with_key, settings, monkeypatch):
+    from desktop.models import Notification
+
+    settings.GITHUB_REPO, settings.APP_VERSION = "someone/QualResearcher", "1.0.1"
+    dviews._update_cache.clear()
+
+    class Resp(io.BytesIO):
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+    monkeypatch.setattr(dviews.urllib.request, "urlopen", lambda req, timeout: Resp(
+        b'{"tag_name": "v1.0.2", "html_url": "https://github.com/someone/QualResearcher/releases/tag/v1.0.2"}'))
+    client.get(reverse("desktop_update"))
+    dviews._update_cache.clear()
+    n = Notification.objects.get(kind="update")
+    assert n.title == "Version 1.0.2 is available" and n.url.endswith("v1.0.2")
+
+
+def test_no_notifications_outside_the_desktop_app(settings):
+    from desktop.models import Notification
+    from desktop.notify import notify
+
+    settings.DESKTOP = False
+    notify("info", "x")
+    assert not Notification.objects.exists()

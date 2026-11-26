@@ -134,6 +134,26 @@ def install_fonts(data_dir: Path):
         logging.getLogger(__name__).exception("Could not install the Hind Siliguri font")
 
 
+class JsApi:
+    """Called from the page as window.pywebview.api.<name>(…)."""
+
+    def choose_save_path(self, suggested_name, folder):
+        """Windows "Save As" box for a Word file. Returns the chosen path, or "" if cancelled."""
+        import webview
+
+        dialog = getattr(getattr(webview, "FileDialog", None), "SAVE", None) or webview.SAVE_DIALOG
+        start = folder if folder and Path(folder).is_dir() else str(Path.home() / "Documents")
+        result = webview.windows[0].create_file_dialog(
+            dialog, directory=start, save_filename=suggested_name or "transcript.docx",
+            file_types=("Word document (*.docx)",))
+        if not result:
+            return ""
+        path = result if isinstance(result, str) else result[0]
+        if not path.lower().endswith(".docx"):
+            path += ".docx"
+        return path
+
+
 def boot():
     """Load Django and bring the database up to date. Returns Django settings."""
     prepare_environment()
@@ -166,6 +186,11 @@ def selftest() -> int:
         assert "Gemini API key" in page and "site.css" in page
     with urllib.request.urlopen(base + "/static/css/site.css") as r:  # noqa: S310
         assert b"body.app" in r.read()
+    from desktop.notify import on_app_start
+    from desktop.models import Notification
+
+    on_app_start()
+    assert Notification.objects.filter(dedupe_key="welcome-beta").exists()
 
     from transcription import audio, report
     from transcription.models import Job
@@ -192,6 +217,9 @@ def run_window():
     settings = boot()
     log = logging.getLogger(APP_NAME)
     install_fonts(Path(settings.DATA_DIR))
+    from desktop.notify import on_app_start
+
+    on_app_start()  # welcome note, and a note for any job that was cut off when the app closed
     port = free_port()
     start_server(port)
     url = f"http://127.0.0.1:{port}/"
@@ -204,7 +232,7 @@ def run_window():
     webview.settings["OPEN_EXTERNAL_LINKS_IN_BROWSER"] = True
     webview.settings["ALLOW_DOWNLOADS"] = True
     window = webview.create_window(APP_NAME, url + "app/", width=1320, height=840, min_size=(1040, 640),
-                                   text_select=True, background_color="#FBFCFA")
+                                   text_select=True, background_color="#FBFCFA", js_api=JsApi())
 
     def on_closing():
         from transcription import runner

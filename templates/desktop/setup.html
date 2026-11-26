@@ -2,7 +2,7 @@
 {% block title %}Welcome — {{ SITE_NAME }}{% endblock %}
 {% block content %}
 <div class="setup">
-  <h1>Welcome</h1>
+  <h1>Welcome <span class="beta-tag">Beta</span></h1>
   <p class="muted">{{ SITE_NAME }} turns Bangla interview recordings into verbatim transcripts using Google Gemini. It needs your own Gemini API key once. The key stays on this computer.</p>
 
   <a class="key-help" href="{% url 'desktop_help_key' %}">

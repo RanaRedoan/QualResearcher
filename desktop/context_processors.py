@@ -1,3 +1,5 @@
+from urllib.parse import quote
+
 from django.conf import settings
 
 from . import store
@@ -19,7 +21,21 @@ def desktop(request):
         "EXPORT_DIR": str(store.export_dir()),
         "GITHUB_REPO": settings.GITHUB_REPO,
         "SIDEBAR_JOBS": [],
+        "UNREAD_COUNT": 0,
+        "REPORT_MAILTO": (f"mailto:{settings.DEVELOPER_EMAIL}?subject="
+                          + quote(f"{settings.SITE_NAME} {settings.APP_VERSION} beta: problem report")
+                          + "&body=" + quote("What happened:\n\nWhat I expected:\n\nSteps (which file, which button):\n\n"
+                                             f"App version: {settings.APP_VERSION}\n"
+                                             "If you can, attach the log file: %LOCALAPPDATA%\\QualResearcher\\logs\\app.log")),
     }
+    try:
+        from .models import Notification
+
+        ctx["UNREAD_COUNT"] = Notification.objects.filter(read_at__isnull=True).count()
+        latest = Notification.objects.values_list("id", flat=True).first()
+        ctx["LATEST_NOTIFICATION_ID"] = latest or 0
+    except Exception:  # table not created yet (first start before migrate)
+        pass
     user = getattr(request, "user", None)
     if user is not None and user.is_authenticated:
         # the big transcript columns are not needed for the list

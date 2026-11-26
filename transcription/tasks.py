@@ -55,12 +55,14 @@ def process_job(job_id):
         _update(job, status=Job.Status.FAILED, error=str(exc)[:2000], finished_at=timezone.now(),
                 progress_note="Failed — minutes refunded")
         refund_job(job)
+        _desktop_event(job, "failed")
         return
 
     _update(job, segments=segments, partial={}, live_segments=[], auto_retries=0, status=Job.Status.DONE, progress=100, progress_note="Ready",
             finished_at=timezone.now(),
             model_used=f"{settings.GEMINI_TRANSCRIBE_MODEL} / {settings.GEMINI_TRANSLATE_MODEL}")
     _notify_done(job)
+    _desktop_event(job, "done")
 
 
 AUTO_RETRY_ENABLED = True  # the folder command turns this off and waits in its own loop
@@ -85,6 +87,15 @@ def _fail(job, exc):
     _update(job, status=Job.Status.FAILED, error=str(exc)[:2000], finished_at=timezone.now(),
             progress_note="Failed — minutes refunded")
     refund_job(job)
+    _desktop_event(job, "failed")
+
+
+def _desktop_event(job, event):
+    """Bell notification in the desktop app (does nothing on a server)."""
+    if settings.DESKTOP:
+        from desktop.notify import job_event
+
+        job_event(job, event)
 
 
 @shared_task(acks_late=True, max_retries=0, time_limit=60 * 60 * 2)
@@ -108,6 +119,7 @@ def translate_job(job_id):
                 progress_note="Ready", error=f"English translation failed: {str(exc)[:500]}")
         return
     _update(job, segments=segments, translate=True, status=Job.Status.DONE, progress=100, progress_note="Ready")
+    _desktop_event(job, "translated")
 
 
 def _notify_done(job):

@@ -204,15 +204,25 @@ def save_word(request, public_id, kind):
         messages.error(request, "This transcript is not ready yet.")
         return redirect(job)
     buf, filename = result
-    folder = store.export_dir()
+    chosen = request.POST.get("target_path", "").strip()
     try:
-        folder.mkdir(parents=True, exist_ok=True)
-        target = _unique(folder / filename)
+        if chosen:  # picked in the Windows "Save As" box, which already asked about replacing a file
+            target = Path(chosen)
+            if not target.is_absolute() or target.suffix.lower() != ".docx" or not target.parent.is_dir():
+                messages.error(request, "That place can't be used. Choose a folder that exists and a name ending in .docx.")
+                return redirect(job)
+            if target.parent != store.export_dir():
+                store.save(export_dir=str(target.parent))  # next time the box opens in this folder
+        else:
+            folder = store.export_dir()
+            folder.mkdir(parents=True, exist_ok=True)
+            target = _unique(folder / filename)
         target.write_bytes(buf.getvalue())
     except OSError as exc:
-        messages.error(request, f"Could not save the Word file in {folder}: {exc}. Choose another folder in Settings.")
+        messages.error(request, f"Could not save the Word file: {exc}. Is it open in Word? Close it, or choose another name.")
         return redirect(job)
-    request.session["last_export"] = {"job": str(job.public_id), "path": str(target), "name": target.name}
+    request.session["last_export"] = {"job": str(job.public_id), "path": str(target), "name": target.name,
+                                      "folder": str(target.parent)}
     if request.POST.get("open", "1") == "1":
         _open(target)
     return redirect(job)
@@ -252,7 +262,37 @@ def jobs_json(request):
         stalled = (not j.is_finished) and not runner.is_alive_here(j.pk)
         out.append({"id": str(j.public_id), "status": "stopped" if stalled else j.status,
                     "label": "Stopped" if stalled else j.get_status_display(), "progress": j.progress})
-    return JsonResponse({"jobs": out, "running": len(runner.RUNNING | runner.QUEUED | runner.DELAYED)})
+    from .models import Notification
+
+    latest = Notification.objects.first()
+    return JsonResponse({
+        "jobs": out, "running": len(runner.RUNNING | runner.QUEUED | runner.DELAYED),
+        "unread": Notification.objects.filter(read_at__isnull=True).count(),
+        "latest": {"id": latest.id, "kind": latest.kind, "title": latest.title, "body": latest.body,
+                   "url": latest.url} if latest else None,
+    })
+
+
+@_desktop_only
+@login_required
+def notifications(request):
+    """The list shown when the bell is clicked (an HTML fragment)."""
+    from .models import Notification
+
+    items = list(Notification.objects.all()[:40])
+    return render(request, "desktop/_notifications.html", {"items": items})
+
+
+@_desktop_only
+@login_required
+@require_POST
+def notifications_read(request):
+    from django.utils import timezone
+
+    from .models import Notification
+
+    Notification.objects.filter(read_at__isnull=True).update(read_at=timezone.now())
+    return JsonResponse({"ok": True})
 
 
 _update_cache: dict = {}
@@ -281,6 +321,9 @@ def update_check(request):
             latest = data.get("tag_name", "")
             if _version_tuple(latest) > _version_tuple(settings.APP_VERSION):
                 result = {"update": True, "version": latest.lstrip("vV"), "url": data.get("html_url", "")}
+                from .notify import update_available
+
+                update_available(result["version"], result["url"])
         except Exception as exc:  # offline, rate-limited … just say nothing
             log.info("Update check skipped: %s", exc)
         _update_cache["result"] = result

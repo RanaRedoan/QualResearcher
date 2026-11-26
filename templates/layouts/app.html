@@ -11,7 +11,12 @@
   <div class="side-brand">
     <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#1D6B43"/><circle cx="15" cy="15" r="7" fill="none" stroke="#fff" stroke-width="2.4"/><path d="M19.5 19.5L24 24" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg>
     <span>{{ SITE_NAME }}</span>
+    <button type="button" class="bell" id="bell" aria-label="Notifications" aria-haspopup="true" aria-expanded="false" title="Notifications">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <span class="bell-count" id="bell-count"{% if not UNREAD_COUNT %} hidden{% endif %}>{{ UNREAD_COUNT }}</span>
+    </button>
   </div>
+  <div class="notif-panel" id="notif-panel" hidden role="dialog" aria-label="Notifications"></div>
   <a class="btn side-new" href="{% url 'upload' %}" title="Ctrl+N">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
     New transcription
@@ -63,11 +68,15 @@
   {% block content %}{% endblock %}
 </main>
 
+<div class="toast" id="toast" hidden role="status" aria-live="polite"></div>
+
 <footer class="statusbar">
+  <span class="sb-item sb-beta" title="Beta version: please report problems">Beta</span>
   <span class="sb-item">{% if KEY_SET %}<span class="sb-dot ok"></span>Default key: {{ DEFAULT_KEY_NAME|default:"set" }}{% else %}<span class="sb-dot bad"></span><a href="{% url 'desktop_settings' %}">No Gemini key</a>{% endif %}</span>
   <span class="sb-item" id="sb-running">{% if RUNNING_COUNT %}{{ RUNNING_COUNT }} transcribing — keep the app open{% else %}Idle{% endif %}</span>
   <span class="sb-spacer"></span>
   <a class="sb-item sb-update" id="sb-update" href="#" target="_blank" rel="noopener" hidden></a>
+  <a class="sb-item sb-report" href="{{ REPORT_MAILTO }}" target="_blank" rel="noopener">Report a problem</a>
   <span class="sb-item">{% include "_credit.html" %}</span>
   <span class="sb-item">v{{ APP_VERSION }}</span>
 </footer>
@@ -86,6 +95,35 @@
   document.addEventListener("keydown", function (e) {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "n") { e.preventDefault(); location.href = "{% url 'upload' %}"; }
   });
+  // bell: open the list, mark everything read
+  var bell = document.getElementById("bell"), panel = document.getElementById("notif-panel"),
+      count = document.getElementById("bell-count"), latestId = {{ LATEST_NOTIFICATION_ID|default:0 }};
+  var csrf = "{{ csrf_token }}";
+  function setCount(n) { count.textContent = n; count.hidden = !n; }
+  bell.addEventListener("click", function (e) {
+    e.stopPropagation();
+    if (!panel.hidden) { panel.hidden = true; bell.setAttribute("aria-expanded", "false"); return; }
+    fetch("{% url 'desktop_notifications' %}", {credentials: "same-origin"}).then(function (r) { return r.text(); }).then(function (html) {
+      panel.innerHTML = html; panel.hidden = false; bell.setAttribute("aria-expanded", "true");
+      fetch("{% url 'desktop_notifications_read' %}", {method: "POST", credentials: "same-origin", headers: {"X-CSRFToken": csrf}});
+      setCount(0);
+    });
+  });
+  document.addEventListener("click", function (e) { if (!panel.hidden && !panel.contains(e.target)) { panel.hidden = true; bell.setAttribute("aria-expanded", "false"); } });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") panel.hidden = true; });
+
+  // a small note in the corner when something new happens (e.g. a transcript is ready)
+  var toast = document.getElementById("toast"), toastTimer;
+  function showToast(n) {
+    toast.className = "toast " + n.kind;
+    toast.innerHTML = "";
+    var t = document.createElement("strong"); t.textContent = n.title; toast.appendChild(t);
+    if (n.body) { var b = document.createElement("span"); b.textContent = n.body; toast.appendChild(b); }
+    toast.onclick = function () { if (n.url) location.href = n.url; };
+    toast.hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { toast.hidden = true; }, 12000);
+  }
+
   // keep status and progress in the list current
   function refresh() {
     fetch("{% url 'desktop_jobs' %}", {credentials: "same-origin"}).then(function (r) { return r.json(); }).then(function (d) {
@@ -100,12 +138,30 @@
         if (bar && active) bar.firstElementChild.style.width = j.progress + "%";
       });
       document.getElementById("sb-running").textContent = d.running ? d.running + " transcribing — keep the app open" : "Idle";
+      setCount(d.unread);
+      if (d.latest && d.latest.id > latestId) { latestId = d.latest.id; showToast(d.latest); }
       setTimeout(refresh, d.running ? 4000 : 15000);
     }).catch(function () { setTimeout(refresh, 15000); });
   }
   setTimeout(refresh, 4000);
   var sel = document.querySelector("#job-list .li.sel");
   if (sel) sel.scrollIntoView({block: "nearest"});
+  // "Save as Word": let Windows ask where to save (only inside the app window)
+  document.querySelectorAll("form[data-save-name]").forEach(function (form) {
+    form.addEventListener("submit", function (e) {
+      if (form.dataset.chosen) return;               // second round: path already picked
+      var api = window.pywebview && window.pywebview.api;
+      if (!api || !api.choose_save_path) return;     // plain save into the Word files folder
+      e.preventDefault();
+      api.choose_save_path(form.dataset.saveName, form.dataset.folder).then(function (path) {
+        if (!path) return;                           // cancelled
+        form.querySelector("[name=target_path]").value = path;
+        form.dataset.chosen = "1";
+        form.submit();
+      }).catch(function () { form.dataset.chosen = "1"; form.submit(); });
+    });
+  });
+
   // newer version on GitHub?
   fetch("{% url 'desktop_update' %}").then(function (r) { return r.json(); }).then(function (d) {
     if (!d.update) return;
